@@ -6,14 +6,14 @@ using Microsoft.VisualStudio.Shell;
 
 using Microsoft.VisualStudio.Shell;
 
+using Microsoft.VisualStudio.Shell.Design;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
+using stdole;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-
-using System.ComponentModel.Design;
-
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -24,7 +24,10 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
+using IServiceProvider = System.IServiceProvider;
 using TextSelection = EnvDTE.TextSelection;
+
+//good setup tutorial http://www.diaryofaninja.com/blog/2014/02/18/who-said-building-visual-studio-extensions-was-hard
 
 namespace BenjaminAdams.Unit_Test_Mapper_Generator
 {
@@ -118,6 +121,15 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             var dte = GetService(typeof(SDTE)) as DTE2;
             if (dte.SelectedItems.Count <= 0) return;
 
+            List<CodeClass> foundClasses = new List<CodeClass>();
+            List<CodeFunction> foundMethod = new List<CodeFunction>();
+            CodeElements elementsInDocument = dte.ActiveDocument.ProjectItem.FileCodeModel.CodeElements;
+            RecursiveClassSearch(dte.ActiveDocument.ProjectItem.FileCodeModel.CodeElements, foundClasses);
+            RecursiveMethodSearch(dte.ActiveDocument.ProjectItem.FileCodeModel.CodeElements, foundMethod);
+
+            //  List<Type> types = GetAllTypes();
+            // CodeClassExample(dte);
+            // AttributesExample(dte);
             CodeElementExample(dte);
 
             foreach (SelectedItem selectedItem in dte.SelectedItems)
@@ -158,22 +170,106 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             }
         }
 
+        private static void RecursiveClassSearch(CodeElements elements, List<CodeClass> foundClasses)
+        {
+            foreach (CodeElement codeElement in elements)
+            {
+                if (codeElement is CodeClass)
+                {
+                    foundClasses.Add(codeElement as CodeClass);
+                }
+                RecursiveClassSearch(codeElement.Children, foundClasses);
+            }
+        }
+
+        public static void RecursiveMethodSearch(CodeElements elements, List<CodeFunction> foundMethod)
+        {
+            foreach (CodeElement codeElement in elements)
+            {
+                if (codeElement is CodeFunction)
+                {
+                    foundMethod.Add(codeElement as CodeFunction);
+                }
+                RecursiveMethodSearch(codeElement.Children, foundMethod);
+            }
+        }
+
         //from https://msdn.microsoft.com/en-us/library/envdte.textpoint.codeelement.aspx
         public void CodeElementExample(DTE2 dte)
         {
+            var members = "";
             // Before running this example, open a code document from a project
             // and place the insertion point anywhere inside the source code.
             try
             {
                 TextSelection sel = (TextSelection)dte.ActiveDocument.Selection;
                 TextPoint pnt = (TextPoint)sel.ActivePoint;
-
-                var asdasdasdasdd = sel.ActivePoint.CodeElement[vsCMElement.vsCMElementClass];
-
+                //  var asdasdasdasdd = sel.ActivePoint.CodeElement[vsCMElement.vsCMElementClass];
                 TextSelection sel2 = (TextSelection)dte.ActiveDocument.Selection;
-                CodeFunction fun = (CodeFunction)sel2.ActivePoint.get_CodeElement(vsCMElement.vsCMElementFunction);
 
-                var typppeee = fun.Name + "'s return type is " + fun.Type.AsFullName;
+                CodeType sel3 = (CodeType)dte.ActiveDocument.Selection;
+                foreach (CodeElement elem in sel3.Members)
+                {
+                    members = members + (elem.Name + "\n");
+                }
+                //CodeFunction fun = (CodeFunction)sel2.ActivePoint.get_CodeElement(vsCMElement.vsCMElementFunction);
+
+                // var types = GetAvailableTypes(dte, this, true);
+
+                //EnvDTE.CodeParameter fun = sel2.ActivePoint.CodeElement[vsCMElement.vsCMElementParameter] as EnvDTE.CodeParameter;
+                //var typppeee = fun.Name + "'s return type is " + fun.Type.AsFullName;
+
+                EnvDTE.TextSelection ts = dte.ActiveWindow.Selection as EnvDTE.TextSelection;
+                if (ts == null)
+                    return;
+
+                //var codeParam5 = ts.ActivePoint.CodeElement[vsCMElement.vsCMElementParameter];
+                //var child = codeParam5.Children;
+                //var ttasda345sdasd = codeParam5.InfoLocation;
+
+                //var objCodeCls = (CodeClass)ts.ActivePoint.get_CodeElement(vsCMElement.vsCMElementClass);
+
+                //var objTextSel = (TextSelection)dte.ActiveDocument.Selection;
+                //var objCodeCls = (CodeClass)objTextSel.ActivePoint.get_CodeElement(vsCMElement.vsCMElementClass);
+                //var xxxx = objTextSel.ActivePoint.get_CodeElement(vsCMElement.vsCMElementClass);
+                // var objCodeCls = (CodeParameter)objTextSel.ActivePoint.get_CodeElement(vsCMElement.vsCMElementParameter);
+                // var objCodeCls = (CodeClass)ts.ActivePoint.CodeElement[vsCMElement.vsCMElementParameter] as EnvDTE.CodeClass;
+
+                //foreach (CodeElement elem in objCodeCls.Members)
+                //{
+                //    members = members + (elem.Name + "\n");
+                //}
+
+                //foreach (CodeElement elem in objCodeCls.Attributes)
+                //{
+                //    members = members + (elem.Name + "\n");
+                //}
+
+                //foreach (CodeElement elem in objCodeCls.Collection)
+                //{
+                //    members = members + (elem.Name + "\n");
+                //}
+
+                //EnvDTE.CodeParameter codeParam2 = ts.ActivePoint.CodeElement[vsCMElement.vsCMElementParameter] as EnvDTE.CodeParameter;
+                //if (codeParam2 == null)
+                //    return;
+
+                //var ttttt = codeParam2.Type;
+                //var tttftt = codeParam2.Kind;
+                ////var xxx = codeParam2.Type;
+                //var et = codeParam2.Type.ElementType;
+                //var etk = codeParam2.Type.TypeKind;
+
+                // Type tttt = GetTypeByName(dte, this, codeParam2.Type.AsFullName);
+
+                //EnvDTE.CodeParameter codeParam = ts.ActivePoint.CodeElement[vsCMElement.vsCMElementParameter] as EnvDTE.CodeParameter;
+                //if (codeParam == null)
+                //    return;
+
+                //  Type t = GetTypeByName(dte, (Package)this, fun.Type.AsFullName);
+
+                //YAY do a foreach here
+                //  DoSomethingRecursively(t);
 
                 // Discover every code element containing the insertion point.
                 string elems = "";
@@ -193,14 +289,210 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
                 }
 
                 var asdasdasd = "The following elements contain the insertion point:\n\n" + elems;
-
-                // MessageBox.Show("The following elements contain the insertion point:\n\n"+ elems);
             }
             catch (Exception ex)
             {
                 // MessageBox.Show(ex.Message);
                 var asdasdasdasd = ex;
             }
+        }
+
+        public void AttributesExample(DTE2 dte)
+        {
+            // Before running this example, open a code document from a project
+            // and place the insertion point inside a class definition.
+            try
+            {
+                // Retrieve the CodeClass at the insertion point.
+                TextSelection sel = (TextSelection)dte.ActiveDocument.Selection;
+                CodeClass cls = (CodeClass)sel.ActivePoint.get_CodeElement(vsCMElement.vsCMElementClass);
+
+                // Enumerate the CodeClass's attributes.
+                string attrs = "";
+                foreach (CodeAttribute attr in cls.Attributes)
+                {
+                    attrs += attr.Name + "(" + attr.Value + ")" + "\r\n";
+                }
+
+                var namexxx = cls.Name + " has the following attributes:" + "\r\n\r\n" + attrs;
+            }
+            catch (Exception ex)
+            {
+                var asdasdsad = ex;
+            }
+        }
+
+        public void CodeClassExample(DTE2 dte)
+        {
+            // Before running this example, open a code document from a
+            // project and place the insertion point inside a class definition.
+            try
+            {
+                TextSelection objTextSel;
+                CodeClass objCodeCls;
+                objTextSel = (TextSelection)dte.ActiveDocument.Selection;
+                objCodeCls = (CodeClass)objTextSel.ActivePoint.get_CodeElement(vsCMElement.vsCMElementClass);
+                // Add comments to CodeClass objCodeClass - notice change in code document.
+                objCodeCls.Comment = "Comments for the CodeClass object.";
+                // Access top-level object through the CodeClass object
+                // and return the file name of that top-level object.
+                var filename = objCodeCls.DTE.FileName;
+                // Get the language used to code the CodeClass object - returns a GUID.
+                var lang = objCodeCls.Language;
+
+                // Get a collection of elements contained by the CodeClass object.
+                string members = "Member Elements of " + objCodeCls.Name + ": \n";
+                foreach (CodeElement elem in objCodeCls.Members)
+                {
+                    members = members + (elem.Name + "\n");
+                }
+                var taseasdsads = members;
+            }
+            catch (Exception ex)
+            {
+                var asdasdsad = ex;
+            }
+        }
+
+        //from http://stackoverflow.com/a/25747905/2747782
+        private System.Type GetTypeByName(EnvDTE80.DTE2 dte, Package package, string name)
+        {
+            System.IServiceProvider servProv = package as System.IServiceProvider;
+            DynamicTypeService typeService = servProv.GetService(typeof(Microsoft.VisualStudio.Shell.Design.DynamicTypeService)) as DynamicTypeService;
+
+            IVsSolution sln = servProv.GetService(typeof(IVsSolution)) as IVsSolution;
+
+            IVsHierarchy hier;
+
+            sln.GetProjectOfUniqueName(dte.ActiveDocument.ProjectItem.ContainingProject.UniqueName, out hier);
+
+            return typeService.GetTypeResolutionService(hier).GetType(name, true);
+        }
+
+        private string GetModuleType(Project project, CodeClass codeClass)
+        {
+            IVsSolution solution = (IVsSolution)GetService(typeof(IVsSolution));
+            DynamicTypeService typeResolver = (DynamicTypeService)GetService(typeof(DynamicTypeService));
+
+            IVsHierarchy hierarchy = null;
+            solution.GetProjectOfUniqueName(project.UniqueName, out hierarchy);
+
+            var typeResolutionService = typeResolver.GetTypeResolutionService(hierarchy);
+
+            return typeResolutionService.GetType(codeClass.FullName).AssemblyQualifiedName;
+        }
+
+        public IEnumerable<Type> GetAvailableTypes(EnvDTE80.DTE2 dte, Package package, bool includeReferences)
+        {
+            System.IServiceProvider servProv = package as System.IServiceProvider;
+            DynamicTypeService typeService = (DynamicTypeService)servProv.GetService(typeof(DynamicTypeService));
+            Debug.Assert(typeService != null, "No dynamic type service registered.");
+
+            IVsSolution sln = servProv.GetService(typeof(IVsSolution)) as IVsSolution;
+
+            IVsHierarchy hier;
+
+            sln.GetProjectOfUniqueName(dte.ActiveDocument.ProjectItem.ContainingProject.UniqueName, out hier);
+
+            // IVsHierarchy hier = VsHelper.GetCurrentHierarchy(provider);
+            Debug.Assert(hier != null, "No active hierarchy is selected.");
+
+            ITypeDiscoveryService discovery = typeService.GetTypeDiscoveryService(hier);
+
+            HashSet<Type> availableTypes = new HashSet<Type>();
+            foreach (Type type in discovery.GetTypes(typeof(object), includeReferences))
+            {
+                // We will never allow non-public types selection, as it's terrible practice.
+                if (type.IsPublic)
+                {
+                    if (!availableTypes.Contains(type))
+                    {
+                        availableTypes.Add(type);
+                    }
+                }
+            }
+
+            return availableTypes;
+        }
+
+        public List<Type> GetAllTypes()
+        {
+            var trs = GetTypeDiscoveryService();
+            var types = trs.GetTypes(typeof(object), true /*excludeGlobalTypes*/);
+            var result = new List<Type>();
+            foreach (Type type in types)
+            {
+                if (type.IsPublic)
+                {
+                    if (!result.Contains(type))
+                        result.Add(type);
+                }
+            }
+            return result;
+        }
+
+        private ITypeDiscoveryService GetTypeDiscoveryService()
+        {
+            var dte = GetService<EnvDTE.DTE>();
+            var typeService = GetService<DynamicTypeService>();
+            var solution = GetService<IVsSolution>();
+            IVsHierarchy hier;
+            var projects = dte.ActiveSolutionProjects as Array;
+            var currentProject = projects.GetValue(0) as Project;
+            solution.GetProjectOfUniqueName(currentProject.UniqueName, out hier);
+            return typeService.GetTypeDiscoveryService(hier);
+        }
+
+        private T GetService<T>()
+        {
+            return (T)GetService(typeof(T));
+        }
+
+        public static string DoSomethingRecursively(Type T)
+        {
+            // if (input == null || IsPrimitiveType(input) == true) return input;
+            // if (CheckList<T>() == true) return input;
+
+            if (T.BaseType != null && T.BaseType.ToString() == "Newtonsoft.Json.Linq.JToken") //prevent stackoverflow if its this type
+            {
+                return "";
+            }
+
+            foreach (PropertyInfo prp in T.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(x => x.CanRead && x.CanWrite))
+            {
+                var tmp = prp;
+
+                //var propValue = prp.GetValue(input, null);
+
+                // var elems = propValue as IList;
+
+                //    if (elems != null)
+                //    {
+                //        //check nested arrays
+                //        var items = prp.GetValue(input, null) as IList;
+                //        if (items != null)
+                //        {
+                //            foreach (var item in items)
+                //            {
+                //                MaskSensitiveData(item.GetType(), item);
+                //            }
+                //        }
+                //    }
+                //    else
+                //    {
+                //        // MaskObject(prp, input);
+
+                //        if (prp.PropertyType.Assembly == input.GetType().Assembly)
+                //        {
+                //            //check nested classes
+                //            MaskSensitiveData(prp.PropertyType, prp.GetValue(input, null));
+                //        }
+                //    }
+                //}
+
+                //return input;
+            }
+            return null;
         }
 
         //private void MyToolWindow_MouseRightButtonDown(object sender, MouseButtonEventArgs e)

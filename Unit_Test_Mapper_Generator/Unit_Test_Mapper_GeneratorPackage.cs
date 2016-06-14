@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Forms;
@@ -103,17 +104,22 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             var dte = GetService(typeof(SDTE)) as DTE2;
             if (dte.SelectedItems.Count <= 0) return;
 
+            // var asd= dte.ActiveSolutionProjects(0);
+
             var foundClasses = GetClasses(dte);
 
-            string promptValue = Prompt.ShowDialog(foundClasses);
+            var promptValue = Prompt.ShowDialog(foundClasses);
+            if (promptValue == "") return;
 
             var selectedClass = (CodeClass)foundClasses.First(x => x.FullName == promptValue);
 
             foreach (CodeElement member in selectedClass.Members)
             {
-                if (member.IsCodeType == false) continue;
+                if (IsValidPublicMember(member) == false) continue;
 
-                var tmp = member.FullName;
+                var fullName = member.FullName;
+                var fieldName = member.Name;
+                var type = member.Language;
             }
 
             foreach (CodeElement member in selectedClass.Attributes)
@@ -128,6 +134,18 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
                 if (member.IsCodeType == false) continue;
 
                 var tmp = member.FullName;
+            }
+        }
+
+        private static bool IsValidPublicMember(CodeElement member)
+        {
+            if (member.Kind == vsCMElement.vsCMElementProperty)
+            {
+                return ((CodeProperty)member).Access == vsCMAccess.vsCMAccessPublic;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -149,23 +167,143 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             List<CodeClass> foundClasses = new List<CodeClass>();
             //List<CodeFunction> foundMethod = new List<CodeFunction>();
             //CodeElements elementsInDocument = dte.ActiveDocument.ProjectItem.FileCodeModel.CodeElements;
-            RecursiveClassSearch(dte.ActiveDocument.ProjectItem.FileCodeModel.CodeElements, foundClasses);
+
+            //RecursiveClassSearch(dte.ActiveWindow.ProjectItem.FileCodeModel.CodeElements, foundClasses);
+            // ClassSearch(dte.ActiveDocument.ProjectItem.ContainingProject.CodeModel.CodeElements, foundClasses);
+            ClassSearch(dte.Solution.Projects, foundClasses);
+
+            foundClasses.Sort((x, y) => x.FullName.CompareTo(y.FullName));
             //RecursiveMethodSearch(dte.ActiveDocument.ProjectItem.FileCodeModel.CodeElements, foundMethod);
 
             return foundClasses;
         }
 
-        private static void RecursiveClassSearch(CodeElements elements, List<CodeClass> foundClasses)
+        public static IEnumerable<ProjectItem> GetProjectItems(EnvDTE.ProjectItems projectItems)
         {
-            foreach (CodeElement codeElement in elements)
+            foreach (EnvDTE.ProjectItem item in projectItems)
             {
-                if (codeElement is CodeClass)
+                yield return item;
+
+                if (item.SubProject != null)
                 {
-                    foundClasses.Add(codeElement as CodeClass);
+                    foreach (EnvDTE.ProjectItem childItem in GetProjectItems(item.SubProject.ProjectItems))
+                        yield return childItem;
                 }
-                RecursiveClassSearch(codeElement.Children, foundClasses);
+                else
+                {
+                    foreach (EnvDTE.ProjectItem childItem in GetProjectItems(item.ProjectItems))
+                        yield return childItem;
+                }
             }
         }
+
+        private static void ClassSearch(EnvDTE.Projects projects, List<CodeClass> foundClasses)
+        {
+            // var list = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsClass);
+
+            var projs = SolutionProjects.Projects();
+            foreach (var proj in projs)
+            {
+                // if (proj == null || proj.ProjectItems == null || proj.ProjectItems.ContainingProject == null || proj.ProjectItems.ContainingProject.CodeModel == null) continue;
+                if (proj == null || proj.CodeModel == null) continue;
+
+                //foreach (ProjectItem item in proj.ProjectItems)
+                //{
+                //    if (item.FileCodeModel == null) continue;
+                //    foreach (CodeElement codeElement in item.FileCodeModel.CodeElements)
+                //    {
+                //        if (codeElement.Kind == EnvDTE.vsCMElement.vsCMElementClass)
+                //        {
+                //            foundClasses.Add((CodeClass)codeElement);
+                //        }
+                //    }
+                //}
+
+                var allClasses = GetProjectItems(proj.ProjectItems).Where(v => v.Name.Contains(".cs"));
+                // check for .cs extension on each
+
+                foreach (var c in allClasses)
+                {
+                    var eles = c.FileCodeModel;
+                    if (eles == null)
+                        continue;
+                    foreach (var ele in eles.CodeElements)
+                    {
+                        if (ele is EnvDTE.CodeNamespace)
+                        {
+                            var ns = ele as EnvDTE.CodeNamespace;
+                            // run through classes
+                            foreach (var property in ns.Members)
+                            {
+                                var member = property as CodeType;
+                                if (member == null)
+                                    continue;
+
+                                foreach (var d in member.Bases)
+                                {
+                                    var dClass = d as CodeClass;
+                                    if (dClass == null) continue;
+                                    if (dClass.FullName == "System.Object" || dClass.FullName == "System.Enum") continue;
+                                    if (foundClasses.Any(x => x.FullName == member.FullName)) continue;
+
+                                    foundClasses.Add(dClass);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //var projectsItr = projects.GetEnumerator();
+            //while (projectsItr.MoveNext())
+            //{
+            //    var items = ((Project)projectsItr.Current).ProjectItems.GetEnumerator();
+            //    while (items.MoveNext())
+            //    {
+            //        var proj = (ProjectItem)items.Current;
+            //        //Recursion to get all ProjectItems
+            //        // projectItems.Add(GetFiles(proj));
+
+            //        // GetFiles(proj, foundClasses);
+
+            //        foreach (CodeClass codeElement in proj.ContainingProject.CodeModel.CodeElements)
+            //        {
+            //            foundClasses.Add(codeElement);
+            //        }
+            //    }
+            //}
+
+            //foreach (EnvDTE.Project proj in projects)
+            //{
+            //    if (proj.CodeModel == null) continue;
+
+            //    foreach (CodeClass codeElement in proj.CodeModel.CodeElements)
+            //    {
+            //        foundClasses.Add(codeElement);
+            //    }
+            //}
+        }
+
+        //private static ProjectItem GetFiles(ProjectItem item, List<CodeClass> foundClasses)
+        //{
+        //    //base case
+        //    if (item.ProjectItems == null)
+        //        return item;
+
+        //    var items = item.ProjectItems.GetEnumerator();
+        //    while (items.MoveNext())
+        //    {
+        //        var proj = (ProjectItem)items.Current;
+        //        foreach (CodeClass codeElement in proj.ContainingProject.CodeModel.CodeElements)
+        //        {
+        //            foundClasses.Add(codeElement);
+        //        }
+
+        //        GetFiles(proj, foundClasses);
+        //    }
+
+        //    return item;
+        //}
 
         public static void RecursiveMethodSearch(CodeElements elements, List<CodeFunction> foundMethod)
         {
@@ -224,6 +362,67 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             prompt.AcceptButton = confirmation;
 
             return prompt.ShowDialog() == DialogResult.OK ? classNameCombo1.Text : "";
+        }
+    }
+
+    public static class SolutionProjects
+    {
+        //from http://www.wwwlicious.com/2011/03/29/envdte-getting-all-projects-html/
+        public static IList<Project> Projects()
+        {
+            Projects projects = GetActiveIDE().Solution.Projects;
+            List<Project> list = new List<Project>();
+            var item = projects.GetEnumerator();
+            while (item.MoveNext())
+            {
+                var project = item.Current as Project;
+                if (project == null)
+                {
+                    continue;
+                }
+
+                if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder)
+                {
+                    list.AddRange(GetSolutionFolderProjects(project));
+                }
+                else
+                {
+                    list.Add(project);
+                }
+            }
+
+            return list;
+        }
+
+        private static DTE2 GetActiveIDE()
+        {
+            // Get an instance of currently running Visual Studio IDE.
+            DTE2 dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            return dte2;
+        }
+
+        private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
+        {
+            List<Project> list = new List<Project>();
+            for (var i = 1; i <= solutionFolder.ProjectItems.Count; i++)
+            {
+                var subProject = solutionFolder.ProjectItems.Item(i).SubProject;
+                if (subProject == null)
+                {
+                    continue;
+                }
+
+                // If this is another solution folder, do a recursive call, otherwise add
+                if (subProject.Kind == ProjectKinds.vsProjectKindSolutionFolder)
+                {
+                    list.AddRange(GetSolutionFolderProjects(subProject));
+                }
+                else
+                {
+                    list.Add(subProject);
+                }
+            }
+            return list;
         }
     }
 }

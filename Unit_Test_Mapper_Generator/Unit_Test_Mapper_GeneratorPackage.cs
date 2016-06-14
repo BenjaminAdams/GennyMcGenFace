@@ -147,7 +147,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             }
         }
 
-        private static List<CodeClass> GetClasses(DTE2 dte)
+        private List<CodeClass> GetClasses(DTE2 dte)
         {
             List<CodeClass> foundClasses = new List<CodeClass>();
 
@@ -157,53 +157,22 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             return foundClasses;
         }
 
-        private static void ClassSearch(EnvDTE.Projects projects, List<CodeClass> foundClasses)
+        private void ClassSearch(EnvDTE.Projects projects, List<CodeClass> foundClasses)
         {
             var projs = SolutionProjects.Projects();
-            CancellationTokenSource cts = new CancellationTokenSource();
-            CommonMessagePump msgPump = new CommonMessagePump();
-            msgPump.AllowCancel = true;
-            msgPump.EnableRealProgress = true;
-            msgPump.WaitTitle = "Doing stuff...";
-            msgPump.WaitText = "Please wait while doing stuff.";
 
-            var task = IterateProjects(projs, foundClasses, msgPump, cts);
-            var exitCode = msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
+            IVsStatusbar statusBar = (IVsStatusbar)GetService(typeof(SVsStatusbar));
+            uint cookie = 0;
 
-            if (exitCode == CommonMessagePumpExitCode.UserCanceled || exitCode == CommonMessagePumpExitCode.ApplicationExit)
-            {
-                cts.Cancel();
-                msgPump = new CommonMessagePump();
-                msgPump.AllowCancel = false;
-                msgPump.EnableRealProgress = false;
-                // Wait for the async operation to actually cancel.
-                msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
-            }
+            // Initialize the progress bar.
+            statusBar.Progress(ref cookie, 1, "", 0, 0);
 
-            if (!task.IsCanceled)
-            {
-                try
-                {
-                    task.Wait(cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    // MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private static Task<List<CodeClass>> IterateProjects(IList<Project> projs, List<CodeClass> foundClasses, CommonMessagePump msgPump, CancellationTokenSource cts)
-        {
-            var i = 1;
+            uint i = 0;
             foreach (var proj in projs)
             {
-                if (proj == null) continue;
-
-                cts.Token.ThrowIfCancellationRequested();
-                msgPump.CurrentStep = i;
-                msgPump.ProgressText = String.Format("Processing Item {0}/{1}: {2}", i + 1, msgPump.TotalSteps, proj.Name);
                 i++;
+                if (proj == null) continue;
+                statusBar.Progress(ref cookie, 1, "Loading Classes for Project: " + proj.Name, i, (uint)projs.Count);
 
                 if (proj.ProjectItems == null || proj.CodeModel == null) continue;
 
@@ -228,26 +197,22 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
 
                                 if (member.Kind != vsCMElement.vsCMElementClass) continue;
 
-                                if (HasOnePublicMember((CodeClass)member))
+                                if (HasOnePublicMember(member))
                                 {
-                                    foundClasses.Add((CodeClass)member);
+                                    foundClasses.Add(member);
                                 }
-
-                                //foreach (var d in member.Bases)
-                                //{
-                                //    var dClass = d as CodeClass;
-                                //    if (dClass == null) continue;
-                                //    if (dClass.FullName == "System.Object" || dClass.FullName == "System.Enum") continue;
-                                //    if (foundClasses.Any(x => x.FullName == member.FullName)) continue;
-
-                                //    foundClasses.Add(dClass);
-                                //}
                             }
                         }
                     }
                 }
             }
 
+            // Clear the progress bar.
+            statusBar.Progress(ref cookie, 0, "", 0, 0);
+        }
+
+        private static Task<List<CodeClass>> IterateProjects(IList<Project> projs, List<CodeClass> foundClasses)
+        {
             return Task.FromResult(foundClasses);
         }
 

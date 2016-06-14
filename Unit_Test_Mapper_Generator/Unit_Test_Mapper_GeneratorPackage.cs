@@ -18,15 +18,15 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Mime;
 using System.Reflection;
 using System.Runtime.InteropServices;
-
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Forms;
-using System.Windows.Input;
-using IServiceProvider = System.IServiceProvider;
-using TextSelection = EnvDTE.TextSelection;
+using Task = System.Threading.Tasks.Task;
 
 //good setup tutorial http://www.diaryofaninja.com/blog/2014/02/18/who-said-building-visual-studio-extensions-was-hard
 
@@ -159,21 +159,60 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
 
         private static void ClassSearch(EnvDTE.Projects projects, List<CodeClass> foundClasses)
         {
-            // var list = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsClass);
-
             var projs = SolutionProjects.Projects();
+            CancellationTokenSource cts = new CancellationTokenSource();
+            CommonMessagePump msgPump = new CommonMessagePump();
+            msgPump.AllowCancel = true;
+            msgPump.EnableRealProgress = true;
+            msgPump.WaitTitle = "Doing stuff...";
+            msgPump.WaitText = "Please wait while doing stuff.";
+
+            var task = IterateProjects(projs, foundClasses, msgPump, cts);
+            var exitCode = msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
+
+            if (exitCode == CommonMessagePumpExitCode.UserCanceled || exitCode == CommonMessagePumpExitCode.ApplicationExit)
+            {
+                cts.Cancel();
+                msgPump = new CommonMessagePump();
+                msgPump.AllowCancel = false;
+                msgPump.EnableRealProgress = false;
+                // Wait for the async operation to actually cancel.
+                msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
+            }
+
+            if (!task.IsCanceled)
+            {
+                try
+                {
+                    task.Wait(cts.Token);
+                }
+                catch (Exception ex)
+                {
+                    // MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private static Task<List<CodeClass>> IterateProjects(IList<Project> projs, List<CodeClass> foundClasses, CommonMessagePump msgPump, CancellationTokenSource cts)
+        {
+            var i = 1;
             foreach (var proj in projs)
             {
-                // if (proj == null || proj.ProjectItems == null || proj.ProjectItems.ContainingProject == null || proj.ProjectItems.ContainingProject.CodeModel == null) continue;
-                if (proj == null || proj.ProjectItems == null || proj.CodeModel == null) continue;
+                if (proj == null) continue;
+
+                cts.Token.ThrowIfCancellationRequested();
+                msgPump.CurrentStep = i;
+                msgPump.ProgressText = String.Format("Processing Item {0}/{1}: {2}", i + 1, msgPump.TotalSteps, proj.Name);
+                i++;
+
+                if (proj.ProjectItems == null || proj.CodeModel == null) continue;
 
                 var allClasses = GetProjectItems(proj.ProjectItems).Where(v => v.Name.Contains(".cs"));
 
                 foreach (var c in allClasses)
                 {
                     var eles = c.FileCodeModel;
-                    if (eles == null)
-                        continue;
+                    if (eles == null) continue;
                     foreach (var ele in eles.CodeElements)
                     {
                         if (ele is EnvDTE.CodeNamespace)
@@ -182,12 +221,17 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
 
                             foreach (var property in ns.Members)
                             {
-                                var member = property as CodeType;
+                                //var member = property as CodeType;
+                                var member = property as CodeClass;
                                 if (member == null)
                                     continue;
 
                                 if (member.Kind != vsCMElement.vsCMElementClass) continue;
-                                foundClasses.Add((CodeClass)member);
+
+                                if (HasOnePublicMember((CodeClass)member))
+                                {
+                                    foundClasses.Add((CodeClass)member);
+                                }
 
                                 //foreach (var d in member.Bases)
                                 //{
@@ -203,6 +247,20 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
                     }
                 }
             }
+
+            return Task.FromResult(foundClasses);
+        }
+
+        private static bool HasOnePublicMember(CodeClass selectedClass)
+        {
+            foreach (CodeElement member in selectedClass.Members)
+            {
+                if (IsValidPublicMember(member) == false) continue;
+
+                return true;
+            }
+
+            return false;
         }
 
         public static IEnumerable<ProjectItem> GetProjectItems(EnvDTE.ProjectItems projectItems)
@@ -283,6 +341,58 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             return prompt.ShowDialog() == DialogResult.OK ? classNameCombo1.Text : "";
         }
     }
+
+    //public static class LoadingPrompt
+    //{
+    //    public static void MyLengthyOperation(IList<Item> items)
+    //    {
+    //        CommonMessagePump msgPump = new CommonMessagePump();
+    //        msgPump.AllowCancel = true;
+    //        msgPump.EnableRealProgress = true;
+    //        msgPump.WaitTitle = "Doing stuff...";
+    //        msgPump.WaitText = "Please wait while doing stuff.";
+
+    //        CancellationTokenSource cts = new CancellationTokenSource();
+    //        Task task = Task.Run(() =>
+    //             {
+    //                 for (int i = 0; i < items.Count; i++)
+    //                 {
+    //                     cts.Token.ThrowIfCancellationRequested();
+    //                     msgPump.CurrentStep = i + 1;
+    //                     msgPump.ProgressText = String.Format("Processing Item {0}/{1}: {2}", i + 1, msgPump.TotalSteps, items[i].Name);
+    //                     // Do lengthy stuff on item...
+    //                 }
+    //             }, cts.Token);
+
+    //        var exitCode = msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
+
+    //        if (exitCode == CommonMessagePumpExitCode.UserCanceled || exitCode == CommonMessagePumpExitCode.ApplicationExit)
+    //        {
+    //            cts.Cancel();
+    //            msgPump = new CommonMessagePump();
+    //            msgPump.AllowCancel = false;
+    //            msgPump.EnableRealProgress = false;
+    //            // Wait for the async operation to actually cancel.
+    //            msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
+    //        }
+
+    //        if (!task.IsCanceled)
+    //        {
+    //            try
+    //            {
+    //                task.Wait();
+    //            }
+    //            catch (AggregateException aex)
+    //            {
+    //                MessageBox.Show(aex.InnerException.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+    //            }
+    //            catch (Exception ex)
+    //            {
+    //                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+    //            }
+    //        }
+    //    }
+    //}
 
     public static class SolutionProjects
     {

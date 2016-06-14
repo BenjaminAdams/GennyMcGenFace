@@ -149,19 +149,6 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             }
         }
 
-        //private void menuCommand_BeforeQueryStatus(object sender, EventArgs e)
-        //{
-        //    //  var t = sender.GetType();
-        //    // var tmp = (OleMenuCommand)sender;
-
-        //    //   DTE.ActiveWindow.Selection.ActivePoint.CodeElement(vsCMElement.vsCMElementFunction);
-
-        //    var dte = GetService(typeof(SDTE)) as DTE2;
-        //    if (dte.SelectedItems.Count <= 0) return;
-
-        //    var foundClasses = GetClasses(dte);
-        //}
-
         private static List<CodeClass> GetClasses(DTE2 dte)
         {
             List<CodeClass> foundClasses = new List<CodeClass>();
@@ -239,15 +226,18 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
                                 if (member == null)
                                     continue;
 
-                                foreach (var d in member.Bases)
-                                {
-                                    var dClass = d as CodeClass;
-                                    if (dClass == null) continue;
-                                    if (dClass.FullName == "System.Object" || dClass.FullName == "System.Enum") continue;
-                                    if (foundClasses.Any(x => x.FullName == member.FullName)) continue;
+                                if (member.Kind != vsCMElement.vsCMElementClass) continue;
+                                foundClasses.Add((CodeClass)member);
 
-                                    foundClasses.Add(dClass);
-                                }
+                                //foreach (var d in member.Bases)
+                                //{
+                                //    var dClass = d as CodeClass;
+                                //    if (dClass == null) continue;
+                                //    if (dClass.FullName == "System.Object" || dClass.FullName == "System.Enum") continue;
+                                //    if (foundClasses.Any(x => x.FullName == member.FullName)) continue;
+
+                                //    foundClasses.Add(dClass);
+                                //}
                             }
                         }
                     }
@@ -324,7 +314,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
         {
             Form prompt = new Form()
             {
-                Width = 500,
+                Width = 600,
                 Height = 150,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = "Pick a class",
@@ -342,7 +332,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             {
                 Left = 50,
                 Top = 50,
-                Width = 400,
+                Width = 500,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.CustomSource,
                 AutoCompleteCustomSource = classList,
@@ -351,7 +341,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
 
             Label textLabel = new Label() { Left = 50, Top = 20, Text = "ClassName" };
             // TextBox textBox = new TextBox() { Left = 50, Top = 50, Width = 400 };
-            Button confirmation = new Button() { Text = "Ok", Left = 350, Width = 100, Top = 80, DialogResult = DialogResult.OK };
+            Button confirmation = new Button() { Text = "Ok", Left = 450, Width = 100, Top = 80, DialogResult = DialogResult.OK };
             confirmation.Click += (sender, e) => { prompt.Close(); };
 
             prompt.Controls.Add(classNameCombo1);

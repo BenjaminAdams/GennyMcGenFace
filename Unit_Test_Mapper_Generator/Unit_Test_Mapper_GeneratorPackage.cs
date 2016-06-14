@@ -161,18 +161,14 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
         {
             var projs = SolutionProjects.Projects();
 
-            IVsStatusbar statusBar = (IVsStatusbar)GetService(typeof(SVsStatusbar));
-            uint cookie = 0;
+            var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
 
-            // Initialize the progress bar.
-            statusBar.Progress(ref cookie, 1, "", 0, 0);
-
-            uint i = 0;
+            var i = 0;
             foreach (var proj in projs)
             {
                 i++;
                 if (proj == null) continue;
-                statusBar.Progress(ref cookie, 1, "Loading Classes for Project: " + proj.Name, i, (uint)projs.Count);
+                statusBar.Progress("Loading Classes for Project: " + proj.Name, i, projs.Count);
 
                 if (proj.ProjectItems == null || proj.CodeModel == null) continue;
 
@@ -207,8 +203,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
                 }
             }
 
-            // Clear the progress bar.
-            statusBar.Progress(ref cookie, 0, "", 0, 0);
+            statusBar.End();
         }
 
         private static Task<List<CodeClass>> IterateProjects(IList<Project> projs, List<CodeClass> foundClasses)
@@ -307,57 +302,34 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
         }
     }
 
-    //public static class LoadingPrompt
-    //{
-    //    public static void MyLengthyOperation(IList<Item> items)
-    //    {
-    //        CommonMessagePump msgPump = new CommonMessagePump();
-    //        msgPump.AllowCancel = true;
-    //        msgPump.EnableRealProgress = true;
-    //        msgPump.WaitTitle = "Doing stuff...";
-    //        msgPump.WaitText = "Please wait while doing stuff.";
+    public class StatusBar
+    {
+        private IVsStatusbar _statusBar;
+        private uint _cookie;
 
-    //        CancellationTokenSource cts = new CancellationTokenSource();
-    //        Task task = Task.Run(() =>
-    //             {
-    //                 for (int i = 0; i < items.Count; i++)
-    //                 {
-    //                     cts.Token.ThrowIfCancellationRequested();
-    //                     msgPump.CurrentStep = i + 1;
-    //                     msgPump.ProgressText = String.Format("Processing Item {0}/{1}: {2}", i + 1, msgPump.TotalSteps, items[i].Name);
-    //                     // Do lengthy stuff on item...
-    //                 }
-    //             }, cts.Token);
+        public StatusBar(IVsStatusbar bar)
+        {
+            _statusBar = bar;
+            _cookie = 0;
+            Start();
+        }
 
-    //        var exitCode = msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
+        public void Start()
+        {
+            // Initialize the progress bar.
+            _statusBar.Progress(ref _cookie, 1, "", 0, 0);
+        }
 
-    //        if (exitCode == CommonMessagePumpExitCode.UserCanceled || exitCode == CommonMessagePumpExitCode.ApplicationExit)
-    //        {
-    //            cts.Cancel();
-    //            msgPump = new CommonMessagePump();
-    //            msgPump.AllowCancel = false;
-    //            msgPump.EnableRealProgress = false;
-    //            // Wait for the async operation to actually cancel.
-    //            msgPump.ModalWaitForHandles(((IAsyncResult)task).AsyncWaitHandle);
-    //        }
+        public void End()
+        {
+            _statusBar.Progress(ref _cookie, 0, "", 0, 0);
+        }
 
-    //        if (!task.IsCanceled)
-    //        {
-    //            try
-    //            {
-    //                task.Wait();
-    //            }
-    //            catch (AggregateException aex)
-    //            {
-    //                MessageBox.Show(aex.InnerException.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-    //            }
-    //            catch (Exception ex)
-    //            {
-    //                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-    //            }
-    //        }
-    //    }
-    //}
+        public void Progress(string label, int position, int totalOperationsCount)
+        {
+            _statusBar.Progress(ref _cookie, 1, label, (uint)position, (uint)totalOperationsCount);
+        }
+    }
 
     public static class SolutionProjects
     {

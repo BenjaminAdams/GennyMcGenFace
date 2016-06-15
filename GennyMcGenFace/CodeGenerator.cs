@@ -39,8 +39,6 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         private static string ParseObjects(CodeProperty member)
         {
-            var objAsStr = string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
-
             if (member.Type.CodeType.Name == "List" || member.Type.CodeType.Name == "IEnumerable" || member.Type.CodeType.Name == "ICollection" || member.Type.CodeType.Name == "IList")
             {
                 //list types
@@ -51,13 +49,31 @@ namespace GennyMcGenFace.GennyMcGenFace
                 //    }
                 //}
 
-                return string.Format("{0} = new List<{1}>() {{\r\n{0}{2}\r\n}},", member.Name, member.Type.AsFullName, objAsStr);
+                //var eleType = member.Type.ElementType;
+                var asd = member.Type.CodeType.Bases;
+                var asd2 = member.Type.CodeType.Members;
+
+                foreach (var fff in member.Type.CodeType.Members)
+                {
+                    var type = fff.GetType();
+                    var tmp = fff;
+                    //var nameee = fff.FullName;
+                }
+
+                var name = member.Type.CodeType.Name;
+                var namsdfe = member.Type.CodeType.Access;
+                var namssdasddfe = member.Type.CodeType.Access;
+
+                //var objAsStr = string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
+                var objAsStr = string.Format("{0} new {1}() {{\r\n{0}{0}{2}\r\n{0}}},", _leadingSpaces, member.Type.AsFullName, "SomeProp= \"asd\"");
+
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}\r\n{0}}},\r\n", _leadingSpaces, member.Name, member.Type.AsFullName, objAsStr);
             }
             else
             {
                 //plain object
                 // var prefix = string.Format("{0} = new {1}() {{\r\n", member.Name, member.Type.AsFullName);
-                return objAsStr;
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
             }
         }
 

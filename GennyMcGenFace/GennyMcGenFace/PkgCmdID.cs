@@ -1,8 +1,4 @@
-﻿// PkgCmdID.cs
-// MUST match PkgCmdID.h
-using System;
-
-namespace BenjaminAdams.Unit_Test_Mapper_Generator
+﻿namespace Genny.GennyMcGenFace
 {
     internal static class PkgCmdIDList
     {

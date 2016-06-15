@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="7f28ec20-6ba7-4d68-8a12-77e93761047c" Version="1.0" Language="en-US" Publisher="BenjaminAdams" />
-    <DisplayName>Unit_Test_Mapper_Generator</DisplayName>
-    <Description>Automatically generate mapper unit tests</Description>
+    <Identity Id="e6b0d857-2827-4be7-b504-3a240161daa5" Version="1.0" Language="en-US" Publisher="BenjaminAdams" />
+    <DisplayName>GennyMcGenFace</DisplayName>
+    <Description xml:space="preserve">Automatically generate mapper unit tests</Description>
   </Metadata>
   <Installation InstalledByMsi="false">
     <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[12.0]" />

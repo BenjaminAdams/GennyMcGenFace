@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace BenjaminAdams.Unit_Test_Mapper_Generator {
+namespace Genny.GennyMcGenFace {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("BenjaminAdams.Unit_Test_Mapper_Generator.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Genny.GennyMcGenFace.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -60,22 +60,5 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Can not create tool window..
-        /// </summary>
-        internal static string CanNotCreateWindow {
-            get {
-                return ResourceManager.GetString("CanNotCreateWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to My Tool Window.
-        /// </summary>
-        internal static string ToolWindowTitle {
-            get {
-                return ResourceManager.GetString("ToolWindowTitle", resourceCulture);
-            }
-        }
     }
 }

@@ -24,13 +24,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Documents;
+
+//using System.Windows.Documents;
 using System.Windows.Forms;
 using Task = System.Threading.Tasks.Task;
 
 //good setup tutorial http://www.diaryofaninja.com/blog/2014/02/18/who-said-building-visual-studio-extensions-was-hard
 
-namespace BenjaminAdams.Unit_Test_Mapper_Generator
+namespace Genny.GennyMcGenFace
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.
@@ -51,9 +52,9 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
     // This attribute is needed to let the shell know that this package exposes some menus.
     [ProvideMenuResource("Menus.ctmenu", 1)]
     // This attribute registers a tool window exposed by this package.
-    [ProvideToolWindow(typeof(MyToolWindow))]
+    // [ProvideToolWindow(typeof(MyToolWindow))]
     [Guid(GuidList.guidUnit_Test_Mapper_GeneratorPkgString)]
-    public sealed class Unit_Test_Mapper_GeneratorPackage : Package
+    public sealed class GennyMcGenFacePackage : Package
     {
         /// <summary>
         /// Default constructor of the package.
@@ -62,7 +63,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
         /// not sited yet inside Visual Studio environment. The place to do all the other
         /// initialization is the Initialize method.
         /// </summary>
-        public Unit_Test_Mapper_GeneratorPackage()
+        public GennyMcGenFacePackage()
         {
             Debug.WriteLine(string.Format(CultureInfo.CurrentCulture, "Entering constructor for: {0}", this.ToString()));
         }
@@ -120,19 +121,19 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
                 var type = member.Language;
             }
 
-            foreach (CodeElement member in selectedClass.Attributes)
-            {
-                if (member.IsCodeType == false) continue;
+            //foreach (CodeElement member in selectedClass.Attributes)
+            //{
+            //    if (member.IsCodeType == false) continue;
 
-                var tmp = member.FullName;
-            }
+            //    var tmp = member.FullName;
+            //}
 
-            foreach (CodeElement member in selectedClass.Children)
-            {
-                if (member.IsCodeType == false) continue;
+            //foreach (CodeElement member in selectedClass.Children)
+            //{
+            //    if (member.IsCodeType == false) continue;
 
-                var tmp = member.FullName;
-            }
+            //    var tmp = member.FullName;
+            //}
         }
 
         private static bool IsValidPublicMember(CodeElement member)
@@ -157,6 +158,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             return foundClasses;
         }
 
+        //loads all classes in solution
         private void ClassSearch(EnvDTE.Projects projects, List<CodeClass> foundClasses)
         {
             var projs = SolutionProjects.Projects();
@@ -261,7 +263,7 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
         {
             Form prompt = new Form()
             {
-                Width = 600,
+                Width = 700,
                 Height = 150,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = "Pick a class",
@@ -279,12 +281,37 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             {
                 Left = 50,
                 Top = 50,
-                Width = 500,
+                Width = 600,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.CustomSource,
                 AutoCompleteCustomSource = classList,
                 DataSource = classList
             };
+
+            // classNameCombo1.TextUpdate
+
+            //classNameCombo1.TextUpdate += (sender, e) =>
+            //{
+            //    // var tmpDataSource = classList.Where(x =>x.);
+            //    // classNameCombo1.DataSource = tmpDataSource;
+
+            //    string item = classNameCombo1.Text;
+            //    item = item.ToLower();
+            //    classNameCombo1.Items.Clear();
+            //    List<string> list = new List<string>();
+            //    for (int i = 0; i < classList.Count; i++)
+            //    {
+            //        if (classList[i].ToLower().Contains(item))
+            //            list.Add(classList[i]);
+            //    }
+            //    if (item != String.Empty)
+            //        foreach (string str in list)
+            //            classNameCombo1.Items.Add(str);
+            //    else
+            //        classNameCombo1.Items.AddRange(classList);
+            //    classNameCombo1.SelectionStart = item.Length;
+            //    classNameCombo1.DroppedDown = true;
+            //};
 
             Label textLabel = new Label() { Left = 50, Top = 20, Text = "ClassName" };
             // TextBox textBox = new TextBox() { Left = 50, Top = 50, Width = 400 };
@@ -299,35 +326,6 @@ namespace BenjaminAdams.Unit_Test_Mapper_Generator
             prompt.AcceptButton = confirmation;
 
             return prompt.ShowDialog() == DialogResult.OK ? classNameCombo1.Text : "";
-        }
-    }
-
-    public class StatusBar
-    {
-        private IVsStatusbar _statusBar;
-        private uint _cookie;
-
-        public StatusBar(IVsStatusbar bar)
-        {
-            _statusBar = bar;
-            _cookie = 0;
-            Start();
-        }
-
-        public void Start()
-        {
-            // Initialize the progress bar.
-            _statusBar.Progress(ref _cookie, 1, "", 0, 0);
-        }
-
-        public void End()
-        {
-            _statusBar.Progress(ref _cookie, 0, "", 0, 0);
-        }
-
-        public void Progress(string label, int position, int totalOperationsCount)
-        {
-            _statusBar.Progress(ref _cookie, 1, label, (uint)position, (uint)totalOperationsCount);
         }
     }
 

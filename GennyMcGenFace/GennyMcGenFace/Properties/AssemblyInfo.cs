@@ -7,11 +7,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Unit_Test_Mapper_Generator")]
+[assembly: AssemblyTitle("GennyMcGenFace")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("BenjaminAdams")]
-[assembly: AssemblyProduct("Unit_Test_Mapper_Generator")]
+[assembly: AssemblyCompany("Genny")]
+[assembly: AssemblyProduct("GennyMcGenFace")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -31,5 +31,4 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: InternalsVisibleTo("Unit_Test_Mapper_Generator_IntegrationTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100c92b59da4e745c69c6b93c794bdec7af6d075d9b72733586709b2c51337dcb26519abebfa0321f32c0b7cbe1ec0af771b62be62027a2b135c36f15958bfcfed3338300930795803dcb2033b6b1504a5fa2cbcb87c90e4a6dc455884a0f40ab384dcf5a727843aa6a440bffe5a8ec9b935505fed19182b26f830903d223afb6bb")]
-[assembly: InternalsVisibleTo("Unit_Test_Mapper_Generator_UnitTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100c92b59da4e745c69c6b93c794bdec7af6d075d9b72733586709b2c51337dcb26519abebfa0321f32c0b7cbe1ec0af771b62be62027a2b135c36f15958bfcfed3338300930795803dcb2033b6b1504a5fa2cbcb87c90e4a6dc455884a0f40ab384dcf5a727843aa6a440bffe5a8ec9b935505fed19182b26f830903d223afb6bb")]
+[assembly: InternalsVisibleTo("GennyMcGenFace_UnitTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100fdd5076557041529dc3f88432f9887b4a2d52b9990abd5b8846fa55ac70175fc9964a39008d5574f8f2fc5b0cf2f7a00eeb4a8049033701193ad11a1ccaae48cb974edfe4200acb415fdb1caa424e6739070906d9d27d01e1a92a6ca53d4c86312417755295e9f61e027ac93cdec58dbd8f0c6a1b44ad2e28c9d8a82065e3798")]

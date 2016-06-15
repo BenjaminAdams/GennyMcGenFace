@@ -131,7 +131,7 @@
     </GuidSymbol>
 
     <!-- This is the package guid. -->
-    <GuidSymbol name="guidUnit_Test_Mapper_GeneratorPkg" value="{7f28ec20-6ba7-4d68-8a12-77e93761047c}" />
+    <GuidSymbol name="guidUnit_Test_Mapper_GeneratorPkg" value="{e6b0d857-2827-4be7-b504-3a240161daa5}" />
 
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidUnit_Test_Mapper_GeneratorCmdSet" value="{16e5a107-d17f-4dba-bf77-e0ee7d367266}">

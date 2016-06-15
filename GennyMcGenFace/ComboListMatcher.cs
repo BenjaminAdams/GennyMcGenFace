@@ -5,188 +5,204 @@ using System.Windows.Forms;
 
 namespace GennyMcGenFace.GennyMcGenFace
 {
-    public class AutoCompleteTextBox : TextBox
+    internal class ComboListMatcher : ComboBox, IMessageFilter
     {
-        private ListBox _listBox;
-        private bool _isAdded;
-        private String[] _values;
-        private String _formerValue = String.Empty;
+        private Control ComboParentForm; // Or use type "Form"
+        private ListBox listBoxChild;
+        private int IgnoreTextChange;
+        private bool MsgFilterActive = false;
 
-        public AutoCompleteTextBox(string[] values)
+        public ComboListMatcher()
         {
-            InitializeComponent();
-            ResetListBox();
-            AcceptsTab = true;
-            Values = values;
+            // Set up all the events we need to handle
+            TextChanged += ComboListMatcher_TextChanged;
+            SelectionChangeCommitted += ComboListMatcher_SelectionChangeCommitted;
+            LostFocus += ComboListMatcher_LostFocus;
+            MouseDown += ComboListMatcher_MouseDown;
+            HandleDestroyed += ComboListMatcher_HandleDestroyed;
         }
 
-        private void InitializeComponent()
+        private void ComboListMatcher_HandleDestroyed(object sender, EventArgs e)
         {
-            _listBox = new ListBox();
-            KeyDown += this_KeyDown;
-            KeyUp += this_KeyUp;
+            if (MsgFilterActive)
+                Application.RemoveMessageFilter(this);
         }
 
-        private void ShowListBox()
+        ~ComboListMatcher()
         {
-            if (!_isAdded)
+        }
+
+        private void ComboListMatcher_MouseDown(object sender, MouseEventArgs e)
+        {
+            HideTheList();
+        }
+
+        private void ComboListMatcher_LostFocus(object sender, EventArgs e)
+        {
+            if (listBoxChild != null && !listBoxChild.Focused)
+                HideTheList();
+        }
+
+        private void ComboListMatcher_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            IgnoreTextChange++;
+        }
+
+        private void InitListControl()
+        {
+            if (listBoxChild == null)
             {
-                Parent.Controls.Add(_listBox);
-                _listBox.Left = Left;
-                _listBox.Top = Top + Height;
-                _isAdded = true;
-            }
-            _listBox.Visible = true;
-            _listBox.BringToFront();
-        }
+                // Find parent - or keep going up until you find the parent form
+                ComboParentForm = this.Parent;
 
-        private void ResetListBox()
-        {
-            _listBox.Visible = false;
-        }
-
-        private void this_KeyUp(object sender, KeyEventArgs e)
-        {
-            UpdateListBox();
-        }
-
-        private void this_KeyDown(object sender, KeyEventArgs e)
-        {
-            switch (e.KeyCode)
-            {
-                case Keys.Tab:
-                    {
-                        if (_listBox.Visible)
-                        {
-                            InsertWord((String)_listBox.SelectedItem);
-                            ResetListBox();
-                            _formerValue = Text;
-                        }
-                        break;
-                    }
-                case Keys.Down:
-                    {
-                        if ((_listBox.Visible) && (_listBox.SelectedIndex < _listBox.Items.Count - 1))
-                            _listBox.SelectedIndex++;
-
-                        break;
-                    }
-                case Keys.Up:
-                    {
-                        if ((_listBox.Visible) && (_listBox.SelectedIndex > 0))
-                            _listBox.SelectedIndex--;
-
-                        break;
-                    }
-            }
-        }
-
-        protected override bool IsInputKey(Keys keyData)
-        {
-            switch (keyData)
-            {
-                case Keys.Tab:
-                    return true;
-
-                default:
-                    return base.IsInputKey(keyData);
-            }
-        }
-
-        private void UpdateListBox()
-        {
-            if (Text == _formerValue) return;
-            _formerValue = Text;
-            String word = GetWord();
-
-            if (_values != null && word.Length > 0)
-            {
-                String[] matches = Array.FindAll(_values,
-                                                 x => (x.StartsWith(word, StringComparison.OrdinalIgnoreCase) && !SelectedValues.Contains(x)));
-                if (matches.Length > 0)
+                if (ComboParentForm != null)
                 {
-                    ShowListBox();
-                    _listBox.Items.Clear();
-                    Array.ForEach(matches, x => _listBox.Items.Add(x));
-                    _listBox.SelectedIndex = 0;
-                    _listBox.Height = 0;
-                    _listBox.Width = 0;
-                    Focus();
-                    using (Graphics graphics = _listBox.CreateGraphics())
+                    // Setup a messaage filter so we can listen to the keyboard
+                    if (!MsgFilterActive)
                     {
-                        for (int i = 0; i < _listBox.Items.Count; i++)
-                        {
-                            _listBox.Height += _listBox.GetItemHeight(i);
-                            // it item width is larger than the current one
-                            // set it to the new max item width
-                            // GetItemRectangle does not work for me
-                            // we add a little extra space by using '_'
-                            int itemWidth = (int)graphics.MeasureString(((String)_listBox.Items[i]) + "_", _listBox.Font).Width;
-                            _listBox.Width = (_listBox.Width < itemWidth) ? itemWidth : _listBox.Width;
-                        }
+                        Application.AddMessageFilter(this);
+                        MsgFilterActive = true;
                     }
+
+                    listBoxChild = listBoxChild = new ListBox();
+                    listBoxChild.Visible = false;
+                    listBoxChild.Click += listBox1_Click;
+                    ComboParentForm.Controls.Add(listBoxChild);
+                    ComboParentForm.Controls.SetChildIndex(listBoxChild, 0); // Put it at the front
                 }
-                else
+            }
+        }
+
+        private void ComboListMatcher_TextChanged(object sender, EventArgs e)
+        {
+            if (IgnoreTextChange > 0)
+            {
+                IgnoreTextChange = 0;
+                return;
+            }
+
+            InitListControl();
+
+            if (listBoxChild == null)
+                return;
+
+            string SearchText = this.Text;
+
+            listBoxChild.Items.Clear();
+
+            // Don't show the list when nothing has been typed
+            if (!string.IsNullOrEmpty(SearchText))
+            {
+                foreach (string Item in this.Items)
                 {
-                    ResetListBox();
+                    if (Item != null && Item.ToUpper().Contains(SearchText.ToUpper()))
+                        listBoxChild.Items.Add(Item);
                 }
+            }
+
+            if (listBoxChild.Items.Count > 0)
+            {
+                Point PutItHere = new Point(this.Left, this.Bottom);
+                Control TheControlToMove = this;
+
+                PutItHere = this.Parent.PointToScreen(PutItHere);
+
+                TheControlToMove = listBoxChild;
+                PutItHere = ComboParentForm.PointToClient(PutItHere);
+
+                TheControlToMove.Show();
+                TheControlToMove.Left = PutItHere.X;
+                TheControlToMove.Top = PutItHere.Y;
+                TheControlToMove.Width = this.Width;
+
+                int TotalItemHeight = listBoxChild.ItemHeight * (listBoxChild.Items.Count + 1);
+                TheControlToMove.Height = Math.Min(ComboParentForm.ClientSize.Height - TheControlToMove.Top, TotalItemHeight);
             }
             else
+                HideTheList();
+        }
+
+        /// <summary>
+        /// Copy the selection from the list-box into the combo box
+        /// </summary>
+        private void CopySelection()
+        {
+            if (listBoxChild.SelectedItem != null)
             {
-                ResetListBox();
+                this.SelectedItem = listBoxChild.SelectedItem;
+                HideTheList();
+                this.SelectAll();
             }
         }
 
-        private String GetWord()
+        private void listBox1_Click(object sender, EventArgs e)
         {
-            String text = Text;
-            int pos = SelectionStart;
+            var ThisList = sender as ListBox;
 
-            int posStart = text.LastIndexOf(' ', (pos < 1) ? 0 : pos - 1);
-            posStart = (posStart == -1) ? 0 : posStart + 1;
-            int posEnd = text.IndexOf(' ', pos);
-            posEnd = (posEnd == -1) ? text.Length : posEnd;
-
-            int length = ((posEnd - posStart) < 0) ? 0 : posEnd - posStart;
-
-            return text.Substring(posStart, length);
-        }
-
-        private void InsertWord(String newTag)
-        {
-            String text = Text;
-            int pos = SelectionStart;
-
-            int posStart = text.LastIndexOf(' ', (pos < 1) ? 0 : pos - 1);
-            posStart = (posStart == -1) ? 0 : posStart + 1;
-            int posEnd = text.IndexOf(' ', pos);
-
-            String firstPart = text.Substring(0, posStart) + newTag;
-            String updatedText = firstPart + ((posEnd == -1) ? "" : text.Substring(posEnd, text.Length - posEnd));
-
-            Text = updatedText;
-            SelectionStart = firstPart.Length;
-        }
-
-        public String[] Values
-        {
-            get
+            if (ThisList != null)
             {
-                return _values;
-            }
-            set
-            {
-                _values = value;
+                // Copy selection to the combo box
+                CopySelection();
             }
         }
 
-        public List<String> SelectedValues
+        private void HideTheList()
         {
-            get
+            if (listBoxChild != null)
+                listBoxChild.Hide();
+        }
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (m.Msg == 0x201) // Mouse click: WM_LBUTTONDOWN
             {
-                String[] result = Text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                return new List<String>(result);
+                var Pos = new Point((int)(m.LParam.ToInt32() & 0xFFFF), (int)(m.LParam.ToInt32() >> 16));
+
+                var Ctrl = Control.FromHandle(m.HWnd);
+                if (Ctrl != null)
+                {
+                    // Convert the point into our parent control's coordinates ...
+                    Pos = ComboParentForm.PointToClient(Ctrl.PointToScreen(Pos));
+
+                    // ... because we need to hide the list if user clicks on something other than the list-box
+                    if (ComboParentForm != null)
+                    {
+                        if (listBoxChild != null &&
+                            (Pos.X < listBoxChild.Left || Pos.X > listBoxChild.Right || Pos.Y < listBoxChild.Top || Pos.Y > listBoxChild.Bottom))
+                        {
+                            this.HideTheList();
+                        }
+                    }
+                }
             }
+            else if (m.Msg == 0x100) // WM_KEYDOWN
+            {
+                if (listBoxChild != null && listBoxChild.Visible)
+                {
+                    switch (m.WParam.ToInt32())
+                    {
+                        case 0x1B: // Escape key
+                            this.HideTheList();
+                            return true;
+
+                        case 0x26: // up key
+                        case 0x28: // right key
+                            // Change selection
+                            int NewIx = listBoxChild.SelectedIndex + ((m.WParam.ToInt32() == 0x26) ? -1 : 1);
+
+                            // Keep the index valid!
+                            if (NewIx >= 0 && NewIx < listBoxChild.Items.Count)
+                                listBoxChild.SelectedIndex = NewIx;
+                            return true;
+
+                        case 0x0D: // return (use the currently selected item)
+                            CopySelection();
+                            return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

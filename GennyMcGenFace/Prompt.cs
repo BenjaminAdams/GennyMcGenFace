@@ -21,30 +21,30 @@ namespace GennyMcGenFace.GennyMcGenFace
                 StartPosition = FormStartPosition.CenterScreen
             };
 
-            // var classList = new AutoCompleteStringCollection();
-            var classList = new List<string>();
+            var classList = new AutoCompleteStringCollection();
+            // var classList = new List<string>();
             foreach (var t in classes)
             {
                 classList.Add(t.FullName);
             }
 
-            //var classNameCombo1 = new ComboListMatcher()
-            //{
-            //    Left = 50,
-            //    Top = 50,
-            //    Width = 600,
-            //    AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-            //    AutoCompleteSource = AutoCompleteSource.CustomSource,
-            //    AutoCompleteCustomSource = classList,
-            //    DataSource = classList
-            //};
-
-            var classNameCombo1 = new AutoCompleteTextBox(classList.ToArray())
+            var classNameCombo1 = new ComboListMatcher()
             {
                 Left = 50,
                 Top = 50,
-                Width = 600
+                Width = 600,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.CustomSource,
+                AutoCompleteCustomSource = classList,
+                DataSource = classList
             };
+
+            //var classNameCombo1 = new AutoCompleteTextBox(classList.ToArray())
+            //{
+            //    Left = 50,
+            //    Top = 50,
+            //    Width = 600
+            //};
 
             // classNameCombo1.TextUpdate
 

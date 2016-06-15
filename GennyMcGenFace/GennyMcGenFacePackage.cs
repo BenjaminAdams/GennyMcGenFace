@@ -88,7 +88,8 @@ namespace GennyMcGenFace.GennyMcGenFace
             var promptValue = Prompt.ShowDialog(foundClasses);
             if (promptValue == "") return;
 
-            var selectedClass = (CodeClass)foundClasses.First(x => x.FullName == promptValue);
+            var selectedClass = foundClasses.FirstOrDefault(x => x.FullName == promptValue);
+            if (selectedClass == null) throw new Exception("Class not found");
 
             foreach (CodeElement member in selectedClass.Members)
             {

@@ -144,8 +144,12 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ComboListMatcher.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Guids.cs" />
     <Compile Include="PkgCmdID.cs" />
+    <Compile Include="Prompt.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -154,6 +158,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="GennyMcGenFacePackage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SolutionProjects.cs" />
     <Compile Include="StatusBar.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -165,6 +170,7 @@
     <EmbeddedResource Include="VSPackage.resx">
       <MergeWithCTO>true</MergeWithCTO>
       <ManifestResourceName>VSPackage</ManifestResourceName>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

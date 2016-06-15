@@ -22,7 +22,7 @@
 
   <!--The Commands section is where we the commands, menus and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
-  <Commands package="guidUnit_Test_Mapper_GeneratorPkg">
+  <Commands package="GennyMcGenFacePackage">
     <!-- Inside this section we have different sub-sections: one for the menus, another
     for the menu groups, one for the buttons (the actual commands), one for the combos
     and the last one for the bitmaps used. Each element is identified by a command id that
@@ -31,28 +31,14 @@
     group; your package should define its own command set in order to avoid collisions
     with command ids defined by other packages. -->
 
-    <!--<Menus>
-      <Menu guid="guidTWShortcutMenuCmdSet" id="ColorMenu" type="Context">
-        <Strings>
-          <ButtonText>Color change</ButtonText>
-          <CommandName>ColorChange</CommandName>
-        </Strings>
-      </Menu>
-    </Menus>-->
-
     <!-- In this section you can define new menu groups. A menu group is a container for
          other menus or buttons (commands); from a visual point of view you can see the
          group as the part of a menu contained between two lines. The parent of a group
          must be a menu. -->
     <Groups>
 
-      <!--<Group guid="guidTWShortcutMenuCmdSet" id="ColorGroup">
-        <Parent guid="guidTWShortcutMenuCmdSet" id="ColorMenu" />
-      </Group>-->
-
-      <Group guid="guidUnit_Test_Mapper_GeneratorCmdSet" id="MyMenuGroup" priority="0x0600">
-        <!--<Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />-->
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN" />
+      <Group guid="guidGennyGennyMcGenFaceCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
       </Group>
     </Groups>
 
@@ -60,28 +46,6 @@
     <!--This section defines the elements the user can interact with, like a menu command or a button
         or combo box in a toolbar. -->
     <Buttons>
-
-      <!--<Button guid="guidTWShortcutMenuCmdSet" id="cmdidRed" priority="1" type="Button">
-        <Parent guid="guidTWShortcutMenuCmdSet" id="ColorGroup" />
-        <Strings>
-          <ButtonText>Red</ButtonText>
-        </Strings>
-      </Button>
-
-      <Button guid="guidTWShortcutMenuCmdSet" id="cmdidYellow" priority="3" type="Button">
-        <Parent guid="guidTWShortcutMenuCmdSet" id="ColorGroup" />
-        <Strings>
-          <ButtonText>Yellow</ButtonText>
-        </Strings>
-      </Button>
-
-      <Button guid="guidTWShortcutMenuCmdSet" id="cmdidBlue" priority="5" type="Button">
-        <Parent guid="guidTWShortcutMenuCmdSet" id="ColorGroup" />
-        <Strings>
-          <ButtonText>Blue</ButtonText>
-        </Strings>
-      </Button>-->
-
       <!--To define a menu group you have to specify its ID, the parent menu and its display priority.
           The command is visible and enabled by default. If you need to change the visibility, status, etc, you can use
           the CommandFlag node.
@@ -90,19 +54,11 @@
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
 
-      <Button guid="guidUnit_Test_Mapper_GeneratorCmdSet" id="cmdidMyCommand" priority="0x0100" type="Button">
-        <Parent guid="guidUnit_Test_Mapper_GeneratorCmdSet" id="MyMenuGroup" />
+      <Button guid="guidGennyGennyMcGenFaceCmdSet" id="cmdidMyCommand" priority="0x0100" type="Button">
+        <Parent guid="guidGennyGennyMcGenFaceCmdSet" id="MyMenuGroup" />
         <Icon guid="guidImages" id="bmpPic1" />
         <Strings>
-          <ButtonText>My Command name</ButtonText>
-        </Strings>
-      </Button>
-
-      <Button guid="guidUnit_Test_Mapper_GeneratorCmdSet" id="cmdidMyTool" priority="0x0100" type="Button">
-        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
-        <Icon guid="guidImages" id="bmpPic2" />
-        <Strings>
-          <ButtonText>My Tool Window</ButtonText>
+          <ButtonText>Generate Values For Class</ButtonText>
         </Strings>
       </Button>
     </Buttons>
@@ -119,29 +75,17 @@
   </Commands>
 
   <Symbols>
-
-    <GuidSymbol name="guidTWShortcutMenuCmdSet" value="{f69209e9-975a-4543-821d-1f4a2c52d737}">
-      <IDSymbol name="MyMenuGroup" value="0x1020" />
-      <IDSymbol name="cmdidMyCommand" value="0x0100" />
-      <IDSymbol name="ColorMenu" value="0x1000" />
-      <IDSymbol name="ColorGroup" value="0x1100" />
-      <IDSymbol name="cmdidRed" value="0x102" />
-      <IDSymbol name="cmdidYellow" value="0x103" />
-      <IDSymbol name="cmdidBlue" value="0x104" />
-    </GuidSymbol>
-
     <!-- This is the package guid. -->
-    <GuidSymbol name="guidUnit_Test_Mapper_GeneratorPkg" value="{e6b0d857-2827-4be7-b504-3a240161daa5}" />
+    <GuidSymbol name="guidGennyGennyMcGenFacePkg" value="{e6b0d857-2827-4be7-b504-3a240161daa5}" />
 
     <!-- This is the guid used to group the menu commands together -->
-    <GuidSymbol name="guidUnit_Test_Mapper_GeneratorCmdSet" value="{16e5a107-d17f-4dba-bf77-e0ee7d367266}">
+    <GuidSymbol name="guidGennyGennyMcGenFaceCmdSet" value="{2819cef2-7013-488e-a5d5-b19adde516a8}">
 
       <IDSymbol name="MyMenuGroup" value="0x1020" />
       <IDSymbol name="cmdidMyCommand" value="0x0100" />
-      <IDSymbol name="cmdidMyTool" value="0x0101" />
     </GuidSymbol>
 
-    <GuidSymbol name="guidImages" value="{cd467891-6ebc-49d9-a85d-a786d0a88a37}">
+    <GuidSymbol name="guidImages" value="{e69eaf81-841d-458a-88d4-6b44e8b272c4}">
       <IDSymbol name="bmpPic1" value="1" />
       <IDSymbol name="bmpPic2" value="2" />
       <IDSymbol name="bmpPicSearch" value="3" />

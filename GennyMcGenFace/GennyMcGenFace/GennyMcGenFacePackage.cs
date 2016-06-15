@@ -53,7 +53,7 @@ namespace Genny.GennyMcGenFace
     [ProvideMenuResource("Menus.ctmenu", 1)]
     // This attribute registers a tool window exposed by this package.
     // [ProvideToolWindow(typeof(MyToolWindow))]
-    [Guid(GuidList.guidUnit_Test_Mapper_GeneratorPkgString)]
+    [Guid(GuidList.mainPackageGuid)]
     public sealed class GennyMcGenFacePackage : Package
     {
         /// <summary>
@@ -81,7 +81,7 @@ namespace Genny.GennyMcGenFace
             if (null != mcs)
             {
                 // Create the command for the menu item.
-                CommandID menuCommandID = new CommandID(GuidList.guidUnit_Test_Mapper_GeneratorCmdSet, (int)PkgCmdIDList.cmdidMyCommand);
+                CommandID menuCommandID = new CommandID(GuidList.guidGennyGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdidMyCommand);
 
                 // WE COMMENT OUT THE LINE BELOW
                 // MenuCommand menuItem = new MenuCommand(MenuItemCallback, menuCommandID );
@@ -254,139 +254,6 @@ namespace Genny.GennyMcGenFace
                 }
                 RecursiveMethodSearch(codeElement.Children, foundMethod);
             }
-        }
-    }
-
-    public static class Prompt
-    {
-        public static string ShowDialog(List<CodeClass> classes)
-        {
-            Form prompt = new Form()
-            {
-                Width = 700,
-                Height = 150,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = "Pick a class",
-                StartPosition = FormStartPosition.CenterScreen
-            };
-
-            var classList = new AutoCompleteStringCollection();
-
-            foreach (var t in classes)
-            {
-                classList.Add(t.FullName);
-            }
-
-            var classNameCombo1 = new ComboBox()
-            {
-                Left = 50,
-                Top = 50,
-                Width = 600,
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.CustomSource,
-                AutoCompleteCustomSource = classList,
-                DataSource = classList
-            };
-
-            // classNameCombo1.TextUpdate
-
-            //classNameCombo1.TextUpdate += (sender, e) =>
-            //{
-            //    // var tmpDataSource = classList.Where(x =>x.);
-            //    // classNameCombo1.DataSource = tmpDataSource;
-
-            //    string item = classNameCombo1.Text;
-            //    item = item.ToLower();
-            //    classNameCombo1.Items.Clear();
-            //    List<string> list = new List<string>();
-            //    for (int i = 0; i < classList.Count; i++)
-            //    {
-            //        if (classList[i].ToLower().Contains(item))
-            //            list.Add(classList[i]);
-            //    }
-            //    if (item != String.Empty)
-            //        foreach (string str in list)
-            //            classNameCombo1.Items.Add(str);
-            //    else
-            //        classNameCombo1.Items.AddRange(classList);
-            //    classNameCombo1.SelectionStart = item.Length;
-            //    classNameCombo1.DroppedDown = true;
-            //};
-
-            Label textLabel = new Label() { Left = 50, Top = 20, Text = "ClassName" };
-            // TextBox textBox = new TextBox() { Left = 50, Top = 50, Width = 400 };
-            Button confirmation = new Button() { Text = "Ok", Left = 450, Width = 100, Top = 80, DialogResult = DialogResult.OK };
-            confirmation.Click += (sender, e) => { prompt.Close(); };
-
-            prompt.Controls.Add(classNameCombo1);
-
-            //  prompt.Controls.Add(textBox);
-            prompt.Controls.Add(confirmation);
-            prompt.Controls.Add(textLabel);
-            prompt.AcceptButton = confirmation;
-
-            return prompt.ShowDialog() == DialogResult.OK ? classNameCombo1.Text : "";
-        }
-    }
-
-    public static class SolutionProjects
-    {
-        //from http://www.wwwlicious.com/2011/03/29/envdte-getting-all-projects-html/
-        public static IList<Project> Projects()
-        {
-            Projects projects = GetActiveIDE().Solution.Projects;
-            List<Project> list = new List<Project>();
-            var item = projects.GetEnumerator();
-            while (item.MoveNext())
-            {
-                var project = item.Current as Project;
-                if (project == null)
-                {
-                    continue;
-                }
-
-                if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder)
-                {
-                    list.AddRange(GetSolutionFolderProjects(project));
-                }
-                else
-                {
-                    list.Add(project);
-                }
-            }
-
-            return list;
-        }
-
-        private static DTE2 GetActiveIDE()
-        {
-            // Get an instance of currently running Visual Studio IDE.
-            DTE2 dte2 = Package.GetGlobalService(typeof(DTE)) as DTE2;
-            return dte2;
-        }
-
-        private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
-        {
-            List<Project> list = new List<Project>();
-            for (var i = 1; i <= solutionFolder.ProjectItems.Count; i++)
-            {
-                var subProject = solutionFolder.ProjectItems.Item(i).SubProject;
-                if (subProject == null)
-                {
-                    continue;
-                }
-
-                // If this is another solution folder, do a recursive call, otherwise add
-                if (subProject.Kind == ProjectKinds.vsProjectKindSolutionFolder)
-                {
-                    list.AddRange(GetSolutionFolderProjects(subProject));
-                }
-                else
-                {
-                    list.Add(subProject);
-                }
-            }
-            return list;
         }
     }
 }

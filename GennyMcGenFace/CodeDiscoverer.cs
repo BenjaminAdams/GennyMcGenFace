@@ -29,31 +29,31 @@ namespace GennyMcGenFace.GennyMcGenFace
 
                 if (proj.ProjectItems == null || proj.CodeModel == null) continue;
 
-                var allClasses = GetProjectItems(proj.ProjectItems).Where(v => v.Name.Contains(".cs"));
+                var projectItems = GetProjectItems(proj.ProjectItems).Where(v => v.Name.Contains(".cs"));
 
-                foreach (var c in allClasses)
+                foreach (var c in projectItems)
                 {
                     var eles = c.FileCodeModel;
                     if (eles == null) continue;
-                    foreach (var ele in eles.CodeElements)
+
+                    foreach (var ns in eles.CodeElements.OfType<CodeNamespace>())
                     {
-                        if (ele is EnvDTE.CodeNamespace)
+                        //  var engine = new ScriptEngine();
+
+                        // ns.
+
+                        foreach (var property in ns.Members)
                         {
-                            var ns = ele as EnvDTE.CodeNamespace;
+                            //var member = property as CodeType;
+                            var member = property as CodeClass;
+                            if (member == null)
+                                continue;
 
-                            foreach (var property in ns.Members)
+                            if (member.Kind != vsCMElement.vsCMElementClass) continue;
+
+                            if (CodeGenerator.HasOnePublicMember(member))
                             {
-                                //var member = property as CodeType;
-                                var member = property as CodeClass;
-                                if (member == null)
-                                    continue;
-
-                                if (member.Kind != vsCMElement.vsCMElementClass) continue;
-
-                                if (CodeGenerator.HasOnePublicMember(member))
-                                {
-                                    foundClasses.Add(member);
-                                }
+                                foundClasses.Add(member);
                             }
                         }
                     }

@@ -1,6 +1,8 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using Microsoft.CSharp;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,42 +25,48 @@ namespace GennyMcGenFace.GennyMcGenFace
         private static string IterateMembers(CodeElements members)
         {
             var str = "";
-            foreach (CodeProperty member in members)
+            foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
                 if (IsValidPublicMember((CodeElement)member) == false) continue;
 
                 var fullName = member.FullName;
-                var fieldName = member.Name;
-                var type = member.Language;
-                //str += "   " + member.Name + " = \"yay\",\r\n";
                 str += GetParamValue(member);
             }
 
             return str;
         }
 
+        //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
         private static string ParseObjects(CodeProperty member)
         {
             if (member.Type.CodeType.Name == "List" || member.Type.CodeType.Name == "IEnumerable" || member.Type.CodeType.Name == "ICollection" || member.Type.CodeType.Name == "IList")
             {
                 //list types
-
-                //Something =  new List<>(){
-                //    new Something(){
-                //        SomeProp= "asd"
-                //    }
-                //}
+                var typeref = member.Type as EnvDTE.CodeTypeRef;
+                var typekind = (EnvDTE.vsCMTypeRef)typeref.TypeKind;
 
                 //var eleType = member.Type.ElementType;
                 var asd = member.Type.CodeType.Bases;
                 var asd2 = member.Type.CodeType.Members;
 
-                foreach (var fff in member.Type.CodeType.Members)
-                {
-                    var type = fff.GetType();
-                    var tmp = fff;
-                    //var nameee = fff.FullName;
-                }
+                var info = member.InfoLocation;
+
+                var tttttt = GetTypeFromName(member.Type.AsFullName);
+
+                //var membersAsStr = "";
+                //var collectionAsStr = "";
+
+                //foreach (var fff in member.Type.CodeType.Members)
+                //{
+                //    var tmp = (CodeElement)fff;
+                //    membersAsStr += tmp.FullName + "\r\n";
+                //}
+
+                //foreach (var fff in member.Type.CodeType.Collection)
+                //{
+                //    var tmp = (CodeElement)fff;
+                //    collectionAsStr += tmp.FullName + "\r\n";
+                //}
 
                 var name = member.Type.CodeType.Name;
                 var namsdfe = member.Type.CodeType.Access;
@@ -73,15 +81,52 @@ namespace GennyMcGenFace.GennyMcGenFace
             {
                 //plain object
                 // var prefix = string.Format("{0} = new {1}() {{\r\n", member.Name, member.Type.AsFullName);
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
             }
+        }
+
+        public static Type GetTypeFromName(string friendlyName)
+        {
+            var provider = new CSharpCodeProvider();
+
+            var pars = new CompilerParameters
+            {
+                GenerateExecutable = false,
+                GenerateInMemory = true
+            };
+
+            string code = "public class TypeFullNameGetter"
+                        + "{"
+                        + "     public override string ToString()"
+                        + "     {"
+                        + "         return typeof(" + friendlyName + ").FullName;"
+                        + "     }"
+                        + "}";
+
+            var comp = provider.CompileAssemblyFromSource(pars, new[] { code });
+
+            if (comp.Errors.Count > 0)
+                return null;
+
+            object fullNameGetter = comp.CompiledAssembly.CreateInstance("TypeFullNameGetter");
+            string fullName = fullNameGetter.ToString();
+            return Type.GetType(fullName);
         }
 
         private static string GetParamValue(CodeProperty member)
         {
             var rand = new Random();
 
-            if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.Type.AsString == "System.DateTime")
+            {
+                //DateTime
+                var year = DateTime.Now.Year;
+                var month = DateTime.Now.Month;
+                var day = DateTime.Now.Day;
+                var dateAsStr = string.Format("new DateTime({0}, {1}, {2})", year, month, day);
+                return string.Format("{0}{1} = {2},\r\n", _leadingSpaces, member.Name, dateAsStr);
+            }
+            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //defined types/objects we have created
                 return ParseObjects(member);
@@ -139,9 +184,11 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         public static bool IsValidPublicMember(CodeElement member)
         {
-            if (member.Kind == vsCMElement.vsCMElementProperty)
+            var asProp = member as CodeProperty;
+
+            if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic)
             {
-                return ((CodeProperty)member).Access == vsCMAccess.vsCMAccessPublic;
+                return true;
             }
             else
             {
@@ -151,7 +198,7 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         public static bool HasOnePublicMember(CodeClass selectedClass)
         {
-            foreach (CodeElement member in selectedClass.Members)
+            foreach (CodeElement member in selectedClass.Members.OfType<CodeElement>())
             {
                 if (CodeGenerator.IsValidPublicMember(member) == false) continue;
 

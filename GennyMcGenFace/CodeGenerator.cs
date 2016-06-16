@@ -1,11 +1,15 @@
 ﻿using EnvDTE;
 using EnvDTE80;
 using Microsoft.CSharp;
+using Microsoft.VisualBasic;
 using System;
+using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace GennyMcGenFace.GennyMcGenFace
@@ -27,9 +31,9 @@ namespace GennyMcGenFace.GennyMcGenFace
             var str = "";
             foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
-                if (IsValidPublicMember((CodeElement)member) == false) continue;
+                if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
 
-                var fullName = member.FullName;
+                //var fullName = member.FullName;
                 str += GetParamValue(member);
             }
 
@@ -39,43 +43,23 @@ namespace GennyMcGenFace.GennyMcGenFace
         //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
         private static string ParseObjects(CodeProperty member)
         {
-            if (member.Type.CodeType.Name == "List" || member.Type.CodeType.Name == "IEnumerable" || member.Type.CodeType.Name == "ICollection" || member.Type.CodeType.Name == "IList")
+            if (member.Type.CodeType.Name == "List" || member.Type.CodeType.Name == "ICollection" || member.Type.CodeType.Name == "IList" || member.Type.CodeType.Name == "IEnumerable")
             {
                 //list types
-                var typeref = member.Type as EnvDTE.CodeTypeRef;
-                var typekind = (EnvDTE.vsCMTypeRef)typeref.TypeKind;
 
-                //var eleType = member.Type.ElementType;
-                var asd = member.Type.CodeType.Bases;
-                var asd2 = member.Type.CodeType.Members;
+                var typeFullname = member.Type.AsFullName;
+                var baseType = member.ProjectItem.ContainingProject.CodeModel.CodeTypeFromFullName(GetBaseTypeFromList(member.Type.AsFullName));
 
-                var info = member.InfoLocation;
-
-                var tttttt = GetTypeFromName(member.Type.AsFullName);
-
-                //var membersAsStr = "";
-                //var collectionAsStr = "";
-
-                //foreach (var fff in member.Type.CodeType.Members)
-                //{
-                //    var tmp = (CodeElement)fff;
-                //    membersAsStr += tmp.FullName + "\r\n";
-                //}
-
-                //foreach (var fff in member.Type.CodeType.Collection)
-                //{
-                //    var tmp = (CodeElement)fff;
-                //    collectionAsStr += tmp.FullName + "\r\n";
-                //}
-
-                var name = member.Type.CodeType.Name;
-                var namsdfe = member.Type.CodeType.Access;
-                var namssdasddfe = member.Type.CodeType.Access;
+                if (member.Type.CodeType.Name == "IEnumerable")
+                {
+                    //we have to declare IEumerable's as a list if we want to populate values
+                    typeFullname = string.Format("System.Collections.Generic.List<{0}>", baseType.FullName);
+                }
 
                 //var objAsStr = string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
-                var objAsStr = string.Format("{0} new {1}() {{\r\n{0}{0}{2}\r\n{0}}},", _leadingSpaces, member.Type.AsFullName, "SomeProp= \"asd\"");
+                var objAsStr = string.Format("{0} new {1}() {{\r\n{0}{2}\r\n{0}}},", _leadingSpaces, baseType.FullName, IterateMembers(baseType.Members));
 
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}\r\n{0}}},\r\n", _leadingSpaces, member.Name, member.Type.AsFullName, objAsStr);
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}\r\n{0}}},\r\n", _leadingSpaces, member.Name, typeFullname, objAsStr);
             }
             else
             {
@@ -85,32 +69,15 @@ namespace GennyMcGenFace.GennyMcGenFace
             }
         }
 
-        public static Type GetTypeFromName(string friendlyName)
+        //super ugly hack to get the base type that the list is on.  Not sure how else to do it
+        private static string GetBaseTypeFromList(string fullName)
         {
-            var provider = new CSharpCodeProvider();
-
-            var pars = new CompilerParameters
-            {
-                GenerateExecutable = false,
-                GenerateInMemory = true
-            };
-
-            string code = "public class TypeFullNameGetter"
-                        + "{"
-                        + "     public override string ToString()"
-                        + "     {"
-                        + "         return typeof(" + friendlyName + ").FullName;"
-                        + "     }"
-                        + "}";
-
-            var comp = provider.CompileAssemblyFromSource(pars, new[] { code });
-
-            if (comp.Errors.Count > 0)
-                return null;
-
-            object fullNameGetter = comp.CompiledAssembly.CreateInstance("TypeFullNameGetter");
-            string fullName = fullNameGetter.ToString();
-            return Type.GetType(fullName);
+            fullName = fullName.Replace("System.Collections.Generic.List<", "");
+            fullName = fullName.Replace("System.Collections.Generic.IEnumerable<", "");
+            fullName = fullName.Replace("System.Collections.Generic.IList<", "");
+            fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
+            fullName = fullName.Replace(">", "");
+            return fullName;
         }
 
         private static string GetParamValue(CodeProperty member)
@@ -180,32 +147,6 @@ namespace GennyMcGenFace.GennyMcGenFace
                 //skip
                 return "";
             }
-        }
-
-        public static bool IsValidPublicMember(CodeElement member)
-        {
-            var asProp = member as CodeProperty;
-
-            if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public static bool HasOnePublicMember(CodeClass selectedClass)
-        {
-            foreach (CodeElement member in selectedClass.Members.OfType<CodeElement>())
-            {
-                if (CodeGenerator.IsValidPublicMember(member) == false) continue;
-
-                return true;
-            }
-
-            return false;
         }
     }
 }

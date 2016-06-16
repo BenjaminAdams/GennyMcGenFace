@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -38,20 +39,12 @@ namespace GennyMcGenFace.GennyMcGenFace
 
                     foreach (var ns in eles.CodeElements.OfType<CodeNamespace>())
                     {
-                        //  var engine = new ScriptEngine();
-
-                        // ns.
-
-                        foreach (var property in ns.Members)
+                        foreach (var member in ns.Members.OfType<CodeClass>())
                         {
-                            //var member = property as CodeType;
-                            var member = property as CodeClass;
-                            if (member == null)
+                            if (member == null || member.Kind != vsCMElement.vsCMElementClass)
                                 continue;
 
-                            if (member.Kind != vsCMElement.vsCMElementClass) continue;
-
-                            if (CodeGenerator.HasOnePublicMember(member))
+                            if (HasOnePublicMember(member))
                             {
                                 foundClasses.Add(member);
                             }
@@ -61,6 +54,49 @@ namespace GennyMcGenFace.GennyMcGenFace
             }
 
             statusBar.End();
+        }
+
+        public static bool IsValidPublicMember(CodeElement member)
+        {
+            var asProp = member as CodeProperty;
+
+            if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool HasOnePublicMember(CodeClass selectedClass)
+        {
+            foreach (CodeElement member in selectedClass.Members.OfType<CodeElement>())
+            {
+                if (IsValidPublicMember(member) == false) continue;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsPublic(this CodeElement codeElement)
+        {
+            if (codeElement is CodeType)
+                return ((CodeType)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+            if (codeElement is CodeProperty)
+                return ((CodeProperty)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+            if (codeElement is CodeFunction)
+                return ((CodeFunction)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+            if (codeElement is CodeVariable)
+                return ((CodeVariable)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+            if (codeElement is CodeStruct)
+                return ((CodeStruct)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+            if (codeElement is CodeDelegate)
+                return ((CodeDelegate)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+            return false;
         }
 
         //from http://www.wwwlicious.com/2011/03/29/envdte-getting-all-projects-html/

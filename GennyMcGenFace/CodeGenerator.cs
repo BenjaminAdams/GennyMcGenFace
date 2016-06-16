@@ -59,7 +59,7 @@ namespace GennyMcGenFace.GennyMcGenFace
                 //var objAsStr = string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
                 var objAsStr = string.Format("{0} new {1}() {{\r\n{0}{2}\r\n{0}}},", _leadingSpaces, baseType.FullName, IterateMembers(baseType.Members));
 
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}\r\n{0}}},\r\n", _leadingSpaces, member.Name, typeFullname, objAsStr);
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}}},\r\n", _leadingSpaces, member.Name, typeFullname, objAsStr);
             }
             else
             {

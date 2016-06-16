@@ -61,27 +61,14 @@ namespace GennyMcGenFace.GennyMcGenFace
 
             var foundClasses = GetClasses(dte);
 
-            var promptValue = Prompt.ShowDialog(foundClasses);
-            if (promptValue == "") return;
+            var dialog = new Prompt(foundClasses);
 
-            var selectedClass = foundClasses.FirstOrDefault(x => x.FullName == promptValue);
-            if (selectedClass == null) throw new Exception("Class not found");
+            dialog.ShowDialog();
 
-            CodeGenerator.GenerateClass(selectedClass);
+            //var selectedClass = foundClasses.FirstOrDefault(x => x.FullName == promptValue);
+            //if (selectedClass == null) throw new Exception("Class not found");
 
-            //foreach (CodeElement member in selectedClass.Attributes)
-            //{
-            //    if (member.IsCodeType == false) continue;
-
-            //    var tmp = member.FullName;
-            //}
-
-            //foreach (CodeElement member in selectedClass.Children)
-            //{
-            //    if (member.IsCodeType == false) continue;
-
-            //    var tmp = member.FullName;
-            //}
+            //CodeGenerator.GenerateClass(selectedClass);
         }
 
         private List<CodeClass> GetClasses(DTE2 dte)

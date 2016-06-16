@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testPackageEditorTmp", "testPackageEditorTmp\testPackageEditorTmp.csproj", "{525A1AEC-9DD4-4215-A180-0CA61D797579}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testPackageEditorTmp_IntegrationTests", "testPackageEditorTmp\testPackageEditorTmp_IntegrationTests\testPackageEditorTmp_IntegrationTests.csproj", "{EB4EA494-9C2A-4E01-9788-C3DBB4260062}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2B0E43AF-0986-474D-BA23-20DB8AE45CEB}"
+	ProjectSection(SolutionItems) = preProject
+		IntegrationTests.testsettings = IntegrationTests.testsettings
+		UnitTests1.testsettings = UnitTests1.testsettings
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testPackageEditorTmp_UnitTests", "testPackageEditorTmp\testPackageEditorTmp_UnitTests\testPackageEditorTmp_UnitTests.csproj", "{013DC941-2F49-42AC-A295-315CC5674B48}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{525A1AEC-9DD4-4215-A180-0CA61D797579}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{525A1AEC-9DD4-4215-A180-0CA61D797579}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{525A1AEC-9DD4-4215-A180-0CA61D797579}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{525A1AEC-9DD4-4215-A180-0CA61D797579}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB4EA494-9C2A-4E01-9788-C3DBB4260062}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB4EA494-9C2A-4E01-9788-C3DBB4260062}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB4EA494-9C2A-4E01-9788-C3DBB4260062}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB4EA494-9C2A-4E01-9788-C3DBB4260062}.Release|Any CPU.Build.0 = Release|Any CPU
+		{013DC941-2F49-42AC-A295-315CC5674B48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{013DC941-2F49-42AC-A295-315CC5674B48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{013DC941-2F49-42AC-A295-315CC5674B48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{013DC941-2F49-42AC-A295-315CC5674B48}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

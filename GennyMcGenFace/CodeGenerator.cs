@@ -32,8 +32,6 @@ namespace GennyMcGenFace.GennyMcGenFace
             foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
                 if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
-
-                //var fullName = member.FullName;
                 str += GetParamValue(member);
             }
 
@@ -46,38 +44,18 @@ namespace GennyMcGenFace.GennyMcGenFace
             if (member.Type.CodeType.Name == "List" || member.Type.CodeType.Name == "ICollection" || member.Type.CodeType.Name == "IList" || member.Type.CodeType.Name == "IEnumerable")
             {
                 //list types
-
-                var typeFullname = member.Type.AsFullName;
                 var baseType = member.ProjectItem.ContainingProject.CodeModel.CodeTypeFromFullName(GetBaseTypeFromList(member.Type.AsFullName));
+                var typeFullName = string.Format("List<{0}>", baseType.FullName); //and alternative to this could be member.Type.AsFullName
 
-                if (member.Type.CodeType.Name == "IEnumerable")
-                {
-                    //we have to declare IEumerable's as a list if we want to populate values
-                    typeFullname = string.Format("System.Collections.Generic.List<{0}>", baseType.FullName);
-                }
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}\r\n{0}}},\r\n", _leadingSpaces, baseType.FullName, IterateMembers(baseType.Members));
 
-                //var objAsStr = string.Format("{0}{1} = new {2}() {{\r\n{3}}},", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
-                var objAsStr = string.Format("{0} new {1}() {{\r\n{0}{2}\r\n{0}}},", _leadingSpaces, baseType.FullName, IterateMembers(baseType.Members));
-
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}}},\r\n", _leadingSpaces, member.Name, typeFullname, objAsStr);
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}}},\r\n", _leadingSpaces, member.Name, typeFullName, objAsStr);
             }
             else
             {
                 //plain object
-                // var prefix = string.Format("{0} = new {1}() {{\r\n", member.Name, member.Type.AsFullName);
                 return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", _leadingSpaces, member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members));
             }
-        }
-
-        //super ugly hack to get the base type that the list is on.  Not sure how else to do it
-        private static string GetBaseTypeFromList(string fullName)
-        {
-            fullName = fullName.Replace("System.Collections.Generic.List<", "");
-            fullName = fullName.Replace("System.Collections.Generic.IEnumerable<", "");
-            fullName = fullName.Replace("System.Collections.Generic.IList<", "");
-            fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
-            fullName = fullName.Replace(">", "");
-            return fullName;
         }
 
         private static string GetParamValue(CodeProperty member)
@@ -147,6 +125,28 @@ namespace GennyMcGenFace.GennyMcGenFace
                 //skip
                 return "";
             }
+        }
+
+        //super ugly hack to get the base type that the list is on.  Not sure how else to do it
+        private static string GetBaseTypeFromList(string fullName)
+        {
+            fullName = fullName.Replace("System.Collections.Generic.List<", "");
+            fullName = fullName.Replace("System.Collections.Generic.IEnumerable<", "");
+            fullName = fullName.Replace("System.Collections.Generic.IList<", "");
+            fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
+            fullName = fullName.Replace(">", "");
+            return fullName;
+        }
+
+        private static string GetSpaces(int depth)
+        {
+            var spaces = "";
+            for (var i = 0; i > depth; i++)
+            {
+                spaces += "   ";
+            }
+
+            return spaces;
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using EnvDTE;
+using ScintillaNET;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,14 +23,13 @@ namespace GennyMcGenFace.GennyMcGenFace
             AutoCompleteSource = AutoCompleteSource.CustomSource
         };
 
-        private RichTextBox _editor = new RichTextBox()
+        private Scintilla _editor = new Scintilla()
         {
             Left = 50,
             Top = 120,
             Width = 600,
             Height = 500,
-            AcceptsTab = true,
-            Multiline = true
+            Lexer = Lexer.Cpp
         };
 
         public Prompt(List<CodeClass> classes)
@@ -37,6 +38,7 @@ namespace GennyMcGenFace.GennyMcGenFace
             var dataSource = BuildAutoCompleteSource();
             _classNameCombo1.AutoCompleteCustomSource = dataSource;
             _classNameCombo1.DataSource = dataSource;
+            AddStyles();
         }
 
         private AutoCompleteStringCollection BuildAutoCompleteSource()
@@ -87,6 +89,34 @@ namespace GennyMcGenFace.GennyMcGenFace
 
             var generatedCode = CodeGenerator.GenerateClass(selectedClass);
             _editor.Text = generatedCode;
+        }
+
+        private void AddStyles()
+        {
+            _editor.StyleResetDefault();
+            _editor.Styles[Style.Default].Font = "Consolas";
+            _editor.Styles[Style.Default].Size = 10;
+            _editor.StyleClearAll();
+
+            // Configure the CPP (C#) lexer styles
+            _editor.Styles[Style.Cpp.Default].ForeColor = Color.Silver;
+            _editor.Styles[Style.Cpp.Comment].ForeColor = Color.FromArgb(0, 128, 0); // Green
+            _editor.Styles[Style.Cpp.CommentLine].ForeColor = Color.FromArgb(0, 128, 0); // Green
+            _editor.Styles[Style.Cpp.CommentLineDoc].ForeColor = Color.FromArgb(128, 128, 128); // Gray
+            _editor.Styles[Style.Cpp.Number].ForeColor = Color.Olive;
+            _editor.Styles[Style.Cpp.Word].ForeColor = Color.Blue;
+            _editor.Styles[Style.Cpp.Word2].ForeColor = Color.Blue;
+            _editor.Styles[Style.Cpp.String].ForeColor = Color.FromArgb(163, 21, 21); // Red
+            _editor.Styles[Style.Cpp.Character].ForeColor = Color.FromArgb(163, 21, 21); // Red
+            _editor.Styles[Style.Cpp.Verbatim].ForeColor = Color.FromArgb(163, 21, 21); // Red
+            _editor.Styles[Style.Cpp.StringEol].BackColor = Color.Pink;
+            _editor.Styles[Style.Cpp.Operator].ForeColor = Color.Purple;
+            _editor.Styles[Style.Cpp.Preprocessor].ForeColor = Color.Maroon;
+            _editor.Lexer = Lexer.Cpp;
+
+            // Set the keywords
+            _editor.SetKeywords(0, "abstract as base break case catch checked continue default delegate do else event explicit extern false finally fixed for foreach goto if implicit in interface internal is lock namespace new null object operator out override params private protected public readonly ref return sealed sizeof stackalloc switch this throw true try typeof unchecked unsafe using virtual while");
+            _editor.SetKeywords(1, "bool byte char class const decimal double enum float int long sbyte short static string struct uint ulong ushort void");
         }
     }
 }

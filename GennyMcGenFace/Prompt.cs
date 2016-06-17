@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace GennyMcGenFace.GennyMcGenFace
@@ -27,7 +25,7 @@ namespace GennyMcGenFace.GennyMcGenFace
         private Scintilla _editor = new Scintilla()
         {
             Left = 50,
-            Top = 120,
+            Top = 70,
             Width = 600,
             Height = 500,
             Lexer = Lexer.Cpp
@@ -58,26 +56,19 @@ namespace GennyMcGenFace.GennyMcGenFace
             var prompt = new Form()
             {
                 Width = 700,
-                Height = 700,
+                Height = 650,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = "Pick a class",
                 StartPosition = FormStartPosition.CenterScreen
             };
 
             var textLabel = new Label() { Left = 50, Top = 20, Text = "ClassName" };
-
-            // Button confirmation = new Button() { Text = "Ok", Left = 550, Width = 100, Top = 80, DialogResult = DialogResult.OK };
-            // confirmation.Click += (sender, e) => { prompt.Close(); };
-
             _classNameCombo1.SelectedValueChanged += (sender, e) => { ChangeSelectedClass(); };
 
             prompt.Controls.Add(_classNameCombo1);
             prompt.Controls.Add(_editor);
-            // prompt.Controls.Add(confirmation);
             prompt.Controls.Add(textLabel);
-            // prompt.AcceptButton = confirmation;
             prompt.ShowDialog();
-            //return prompt.ShowDialog() == DialogResult.OK ? classNameCombo1.Text : "";
         }
 
         private void ChangeSelectedClass()

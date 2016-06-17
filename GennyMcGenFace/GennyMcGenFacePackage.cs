@@ -55,22 +55,13 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         private void MenuItemCallback(object sender, EventArgs e)
         {
-            // var str = Words.NewList();
-
-            // Show a Message Box to prove we were here
             var dte = GetService(typeof(SDTE)) as DTE2;
             if (dte.SelectedItems.Count <= 0) return;
 
             var foundClasses = GetClasses(dte);
 
             var dialog = new Prompt(foundClasses);
-
             dialog.ShowDialog();
-
-            //var selectedClass = foundClasses.FirstOrDefault(x => x.FullName == promptValue);
-            //if (selectedClass == null) throw new Exception("Class not found");
-
-            //CodeGenerator.GenerateClass(selectedClass);
         }
 
         private List<CodeClass> GetClasses(DTE2 dte)

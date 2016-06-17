@@ -55,6 +55,8 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         private void MenuItemCallback(object sender, EventArgs e)
         {
+            // var str = Words.NewList();
+
             // Show a Message Box to prove we were here
             var dte = GetService(typeof(SDTE)) as DTE2;
             if (dte.SelectedItems.Count <= 0) return;

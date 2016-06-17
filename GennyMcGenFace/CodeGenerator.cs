@@ -53,51 +53,6 @@ namespace GennyMcGenFace.GennyMcGenFace
             }
         }
 
-        private static string GetListParam(CodeTypeRef member, string paramName, int depth)
-        {
-            var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
-            if (baseType == null) return string.Empty;
-            //var typeFullName = string.Format("List<{0}>", RemoveSystemFromStr(baseType.AsFullName)); //and alternative to this could be member.Type.AsFullName
-
-            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-            {
-                //typed List
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
-                return string.Format("{0}{1} = new List<{2}>() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, baseType.AsFullName, objAsStr);
-            }
-            else
-            {
-                //generic list, such as string/int
-                // var ListString = new List<System.String>() { "yay" };
-                // var ListAry = new String[] { "yay" };
-                return string.Format("{0}{1} = new List<{2}>() {{ {3} }},\r\n", GetSpaces(depth), paramName, RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
-            }
-        }
-
-        private static string GetArrayParam(CodeTypeRef member, string paramName, int depth)
-        {
-            var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromArray(member.AsString));
-            if (baseType == null) return string.Empty;
-
-            var typeFullName = string.Format("{0}[]", RemoveSystemFromStr(baseType.AsFullName));
-
-            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-            {
-                //typed Array
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
-                return string.Format("{0}{1} = new {2} {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
-            }
-            else
-            {
-                //generic array, such as string/int
-                // var ListString = new List<System.String>() { "yay" };
-                // var ListAry = new String[] { "yay" };
-                return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
-
-                // objAsStr = string.Format("{0} {1} \r\n{2}{0},\r\n", GetSpaces(depth + 1), RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
-            }
-        }
-
         private static string GetParam(CodeTypeRef member, string paramName, int depth)
         {
             if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
@@ -159,8 +114,6 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         private static string GetParamValue(CodeTypeRef member, string paramName, int depth)
         {
-            var rand = new Random();
-
             if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
             {
                 //DateTime
@@ -177,33 +130,33 @@ namespace GennyMcGenFace.GennyMcGenFace
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {
                 //string
-                return "\"yay\"";
+                return string.Format("\"{0}\"", Words.Gen(2));
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
             {
                 //char
-                return "'a'";
+                var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                return "'" + chars[StaticRandom.Instance.Next(0, chars.Length)] + "'";
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
             {
                 //bool
-                return rand.Next(0, 1) == 1 ? "true" : "false";
+                return StaticRandom.Instance.Next(0, 1) == 1 ? "true" : "false";
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
             {
                 //numbers (except short)
-                return rand.Next(0, 999999999).ToString();
+                return StaticRandom.Instance.Next(0, 999999999).ToString();
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
             {
                 //short
-                return rand.Next(0, 9999).ToString();
+                return StaticRandom.Instance.Next(0, 9999).ToString();
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {
                 //array
-                //return GetSpaces(depth) + paramName + " = \"yay\",\r\n";
-                return "todo";
+                return "it should not get here";
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
@@ -219,6 +172,50 @@ namespace GennyMcGenFace.GennyMcGenFace
             {
                 //skip
                 return "";
+            }
+        }
+
+        //list logic
+        private static string GetListParam(CodeTypeRef member, string paramName, int depth)
+        {
+            var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
+            if (baseType == null) return string.Empty;
+
+            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            {
+                //typed List
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                return string.Format("{0}{1} = new List<{2}>() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, baseType.AsFullName, objAsStr);
+            }
+            else
+            {
+                //generic list, such as string/int
+                // var ListString = new List<System.String>() { "yay" };
+                // var ListAry = new String[] { "yay" };
+                return string.Format("{0}{1} = new List<{2}>() {{ {3} }},\r\n", GetSpaces(depth), paramName, RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
+            }
+        }
+
+        //array logic
+        private static string GetArrayParam(CodeTypeRef member, string paramName, int depth)
+        {
+            var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromArray(member.AsString));
+            if (baseType == null) return string.Empty;
+
+            var typeFullName = string.Format("{0}[]", RemoveSystemFromStr(baseType.AsFullName));
+
+            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            {
+                //typed Array
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                return string.Format("{0}{1} = new {2} {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
+            }
+            else
+            {
+                //generic array, such as string/int
+                // var ListString = new List<System.String>() { "yay" };
+                // var ListAry = new String[] { "yay" };
+                return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
             }
         }
 

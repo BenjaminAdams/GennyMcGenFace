@@ -23,6 +23,17 @@
   <!--The Commands section is where we the commands, menus and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
   <Commands package="guidGennyMcGenFacePkg">
+
+    <Menus>
+      <Menu guid="guidGennyMcGenFaceCmdSet" id="TopLevelMenu" priority="0x0600" type="Menu">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_MM_TOOLSADDINS" />
+        <Strings>
+          <ButtonText>Genny</ButtonText>
+          <CommandName>Genny</CommandName>
+        </Strings>
+      </Menu>
+    </Menus>
+
     <!-- Inside this section we have different sub-sections: one for the menus, another
     for the menu groups, one for the buttons (the actual commands), one for the combos
     and the last one for the bitmaps used. Each element is identified by a command id that
@@ -38,7 +49,8 @@
     <Groups>
 
       <Group guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
+        <!--<Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />-->
+        <Parent guid="guidGennyMcGenFaceCmdSet" id="TopLevelMenu" />
       </Group>
     </Groups>
 
@@ -83,6 +95,7 @@
     <GuidSymbol name="guidGennyMcGenFaceCmdSet" value="{d3dcaf60-0409-47ec-adb4-6f120ed8dff4}">
       <IDSymbol name="MyMenuGroup" value="0x1020" />
       <IDSymbol name="cmdGennyGenClass" value="0x0100" />
+      <IDSymbol name="TopLevelMenu" value="0x1021" />
     </GuidSymbol>
 
     <GuidSymbol name="guidImages" value="{c183a7e8-436c-48d1-b509-56a132c82a0a}">

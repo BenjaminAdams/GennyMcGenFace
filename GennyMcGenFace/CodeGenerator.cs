@@ -39,10 +39,7 @@ namespace GennyMcGenFace
         {
             try
             {
-                if (member.CodeType.Name == "Nullable")
-                {
-                    member = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(RemoveNullableStr(member.AsFullName));
-                }
+                member = RemoveNullable(member);
 
                 if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
                 {
@@ -233,6 +230,20 @@ namespace GennyMcGenFace
             }
         }
 
+        private static CodeTypeRef RemoveNullable(CodeTypeRef member)
+        {
+            try
+            {
+                if (member.CodeType != null && member.CodeType.Name == "Nullable")
+                {
+                    return ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(RemoveNullableStr(member.AsFullName));
+                }
+            }
+            catch { }
+
+            return member;
+        }
+
         //super ugly hack to get the base type that the list is on.  Not sure how else to do it
         private static string GetBaseTypeFromList(string fullName)
         {
@@ -246,7 +257,7 @@ namespace GennyMcGenFace
 
         private static string RemoveNullableStr(string fullname)
         {
-            fullname=fullname.Replace("System.Nullable<", "");
+            fullname = fullname.Replace("System.Nullable<", "");
             return fullname.Replace(">", "");
         }
 

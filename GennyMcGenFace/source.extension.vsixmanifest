@@ -3,7 +3,8 @@
   <Metadata>
     <Identity Id="668eccdc-c4ea-43d2-95fb-8c7a3a1d5bcc" Version="1.0" Language="en-US" Publisher="GennyMcGenFace" />
     <DisplayName>GennyMcGenFace</DisplayName>
-    <Description>Information about my package</Description>
+    <Description xml:space="preserve">c# code generatorc</Description>
+    <Icon>mcface.png</Icon>
   </Metadata>
   <Installation InstalledByMsi="false">
     <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[12.0]" />

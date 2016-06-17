@@ -16,8 +16,6 @@ namespace GennyMcGenFace.GennyMcGenFace
 {
     public static class CodeGenerator
     {
-        // private static string GetSpaces(depth) = "   ";
-
         public static string GenerateClass(CodeClass selectedClass)
         {
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
@@ -40,22 +38,24 @@ namespace GennyMcGenFace.GennyMcGenFace
         }
 
         //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
-        private static string ParseObjects(CodeProperty member, int depth)
+        private static string ParseObjects(CodeTypeRef member, string paramName, int depth)
         {
-            if (member.Type.CodeType.Name == "List" || member.Type.CodeType.Name == "ICollection" || member.Type.CodeType.Name == "IList" || member.Type.CodeType.Name == "IEnumerable")
+            if (member.CodeType.Name == "List" || member.CodeType.Name == "ICollection" || member.CodeType.Name == "IList" || member.CodeType.Name == "IEnumerable")
             {
                 //list types
-                var baseType = member.ProjectItem.ContainingProject.CodeModel.CodeTypeFromFullName(GetBaseTypeFromList(member.Type.AsFullName));
-                var typeFullName = string.Format("List<{0}>", baseType.FullName); //and alternative to this could be member.Type.AsFullName
+                var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
+                //var baseType = member.ProjectItem.ContainingProject.CodeModel.CodeTypeFromFullName(GetBaseTypeFromList(member.Type.AsFullName));
+                var typeFullName = string.Format("List<{0}>", baseType.AsFullName); //and alternative to this could be member.Type.AsFullName
 
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.FullName, IterateMembers(baseType.Members, depth));
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth));
+                // var objAsStr = "";
 
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), member.Name, typeFullName, objAsStr);
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
             }
             else
             {
                 //plain object
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), member.Name, member.Type.AsFullName, IterateMembers(member.Type.CodeType.Members, depth));
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, member.AsFullName, IterateMembers(member.CodeType.Members, depth));
             }
         }
 
@@ -75,7 +75,7 @@ namespace GennyMcGenFace.GennyMcGenFace
             else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //defined types/objects we have created
-                return ParseObjects(member, depth);
+                return ParseObjects(member.Type, member.Name, depth);
             }
             else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {

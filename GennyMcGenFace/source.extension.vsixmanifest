@@ -4,6 +4,7 @@
     <Identity Id="668eccdc-c4ea-43d2-95fb-8c7a3a1d5bcc" Version="1.0" Language="en-US" Publisher="GennyMcGenFace" />
     <DisplayName>GennyMcGenFace</DisplayName>
     <Description xml:space="preserve">c# code generator</Description>
+    <MoreInfo>https://github.com/BenjaminAdams/GennyMcGenFace</MoreInfo>
     <Icon>Resources\mcface.png</Icon>
     <PreviewImage>Resources\GennyExample.jpg</PreviewImage>
   </Metadata>

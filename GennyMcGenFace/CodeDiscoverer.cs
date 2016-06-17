@@ -1,6 +1,7 @@
 ﻿using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -53,13 +54,20 @@ namespace GennyMcGenFace
 
         public static bool IsValidPublicMember(CodeElement member)
         {
-            var asProp = member as CodeProperty;
-
-            if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic)
+            try
             {
-                return true;
+                var asProp = member as CodeProperty;
+
+                if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
-            else
+            catch (Exception ex)
             {
                 return false;
             }

@@ -14,62 +14,100 @@ namespace GennyMcGenFace
             return str;
         }
 
+        private static string IterateMembers(CodeElements members, int depth)
+        {
+            depth++;
+            var str = "";
+            foreach (CodeProperty member in members.OfType<CodeProperty>())
+            {
+                try
+                {
+                    if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
+
+                    str += GetParam(member.Type, member.Name, depth);
+                }
+                catch (Exception ex)
+                {
+                    //ignore silently
+                }
+            }
+
+            return str;
+        }
+
         private static string GetParam(CodeTypeRef member, string paramName, int depth)
         {
-            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
+            try
             {
-                //DateTime
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                if (member.CodeType.Name == "Nullable")
+                {
+                    member = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(RemoveNullableStr(member.AsFullName));
+                }
+
+                if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
+                {
+                    //DateTime
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.Guid")
+                {
+                    //Guid
+                    return string.Format("{0}{1} = new Guid(\"{2}\"),\r\n", GetSpaces(depth), paramName, Guid.NewGuid());
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                {
+                    //defined types/objects we have created
+                    return ParseObjects(member, paramName, depth);
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
+                {
+                    //string
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
+                {
+                    //char
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
+                {
+                    //bool
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
+                {
+                    //numbers (except short)
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
+                {
+                    //short
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
+                {
+                    //array
+                    return GetArrayParam(member, paramName, depth);
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
+                {
+                    //byte
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
+                {
+                    //object
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                }
+                else
+                {
+                    //skip
+                    return "";
+                }
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            catch (Exception ex)
             {
-                //defined types/objects we have created
-                return ParseObjects(member, paramName, depth);
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
-            {
-                //string
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
-            {
-                //char
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
-            {
-                //bool
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
-            {
-                //numbers (except short)
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
-            {
-                //short
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
-            {
-                //array
-                return GetArrayParam(member, paramName, depth);
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
-            {
-                //byte
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
-            {
-                //object
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
-            }
-            else
-            {
-                //skip
-                return "";
+                return string.Format("{0}//{1} = failed\r\n", GetSpaces(depth), paramName);
             }
         }
 
@@ -134,20 +172,6 @@ namespace GennyMcGenFace
                 //skip
                 return "";
             }
-        }
-
-        private static string IterateMembers(CodeElements members, int depth)
-        {
-            depth++;
-            var str = "";
-            foreach (CodeProperty member in members.OfType<CodeProperty>())
-            {
-                if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
-
-                str += GetParam(member.Type, member.Name, depth);
-            }
-
-            return str;
         }
 
         //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
@@ -218,6 +242,12 @@ namespace GennyMcGenFace
             fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
             fullName = fullName.Replace(">", "");
             return fullName;
+        }
+
+        private static string RemoveNullableStr(string fullname)
+        {
+            fullname=fullname.Replace("System.Nullable<", "");
+            return fullname.Replace(">", "");
         }
 
         //super ugly hack to get the base type that the list is on.  Not sure how else to do it

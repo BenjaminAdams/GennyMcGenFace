@@ -1,18 +1,8 @@
 ﻿using EnvDTE;
-using EnvDTE80;
-using Microsoft.CSharp;
-using Microsoft.VisualBasic;
 using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace GennyMcGenFace.GennyMcGenFace
+namespace GennyMcGenFace
 {
     public static class CodeGenerator
     {
@@ -22,35 +12,6 @@ namespace GennyMcGenFace.GennyMcGenFace
             str += IterateMembers(selectedClass.Members, 0);
             str += "};";
             return str;
-        }
-
-        private static string IterateMembers(CodeElements members, int depth)
-        {
-            depth++;
-            var str = "";
-            foreach (CodeProperty member in members.OfType<CodeProperty>())
-            {
-                if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
-
-                str += GetParam(member.Type, member.Name, depth);
-            }
-
-            return str;
-        }
-
-        //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
-        private static string ParseObjects(CodeTypeRef member, string paramName, int depth)
-        {
-            if (member.CodeType.Name == "List" || member.CodeType.Name == "ICollection" || member.CodeType.Name == "IList" || member.CodeType.Name == "IEnumerable")
-            {
-                //list types
-                return GetListParam(member, paramName, depth);
-            }
-            else
-            {
-                //plain object
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, member.AsFullName, IterateMembers(member.CodeType.Members, depth));
-            }
         }
 
         private static string GetParam(CodeTypeRef member, string paramName, int depth)
@@ -172,6 +133,35 @@ namespace GennyMcGenFace.GennyMcGenFace
             {
                 //skip
                 return "";
+            }
+        }
+
+        private static string IterateMembers(CodeElements members, int depth)
+        {
+            depth++;
+            var str = "";
+            foreach (CodeProperty member in members.OfType<CodeProperty>())
+            {
+                if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
+
+                str += GetParam(member.Type, member.Name, depth);
+            }
+
+            return str;
+        }
+
+        //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
+        private static string ParseObjects(CodeTypeRef member, string paramName, int depth)
+        {
+            if (member.CodeType.Name == "List" || member.CodeType.Name == "ICollection" || member.CodeType.Name == "IList" || member.CodeType.Name == "IEnumerable")
+            {
+                //list types
+                return GetListParam(member, paramName, depth);
+            }
+            else
+            {
+                //plain object
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, member.AsFullName, IterateMembers(member.CodeType.Members, depth));
             }
         }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace GennyMcGenFace.GennyMcGenFace
+namespace GennyMcGenFace
 {
     public static class StaticRandom
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace GennyMcGenFace.GennyMcGenFace
+namespace GennyMcGenFace
 {
     public static class Words
     {
@@ -31,7 +31,7 @@ namespace GennyMcGenFace.GennyMcGenFace
         private static void ReadFromFile()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "GennyMcGenFace.GennyMcGenFace.Words.csv";
+            var resourceName = "GennyMcGenFace.Words.csv";
 
             using (var stream = assembly.GetManifestResourceStream(resourceName))
             using (var r = new StreamReader(stream))

@@ -5,7 +5,7 @@
     <DisplayName>GennyMcGenFace</DisplayName>
     <Description xml:space="preserve">c# code generator</Description>
     <Icon>Resources\mcface.png</Icon>
-    <PreviewImage>Resources\mcface.png</PreviewImage>
+    <PreviewImage>Resources\GennyExample.jpg</PreviewImage>
   </Metadata>
   <Installation InstalledByMsi="false">
     <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[12.0]" />

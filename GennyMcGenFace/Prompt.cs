@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace GennyMcGenFace.GennyMcGenFace
+namespace GennyMcGenFace
 {
     public class Prompt
     {
@@ -25,7 +25,7 @@ namespace GennyMcGenFace.GennyMcGenFace
         private Scintilla _editor = new Scintilla()
         {
             Left = 50,
-            Top = 70,
+            Top = 90,
             Width = 600,
             Height = 500,
             Lexer = Lexer.Cpp
@@ -56,13 +56,13 @@ namespace GennyMcGenFace.GennyMcGenFace
             var prompt = new Form()
             {
                 Width = 700,
-                Height = 650,
+                Height = 640,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = "Pick a class",
                 StartPosition = FormStartPosition.CenterScreen
             };
 
-            var textLabel = new Label() { Left = 50, Top = 20, Text = "ClassName" };
+            var textLabel = new Label() { Left = 50, Top = 25, Text = "ClassName" };
             _classNameCombo1.SelectedValueChanged += (sender, e) => { ChangeSelectedClass(); };
 
             prompt.Controls.Add(_classNameCombo1);

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace GennyMcGenFace
 {
+    //Hosted at https://visualstudiogallery.msdn.microsoft.com/7079720a-e403-4322-9842-d44673776664
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -36,6 +37,7 @@ namespace GennyMcGenFace
             if (dte.SelectedItems.Count <= 0) return;
 
             var foundClasses = GetClasses(dte);
+            if (foundClasses == null || foundClasses.Count == 0) throw new Exception("Must have at least one class in your solution with at least one public property");
 
             var dialog = new Prompt(foundClasses);
             dialog.ShowDialog();

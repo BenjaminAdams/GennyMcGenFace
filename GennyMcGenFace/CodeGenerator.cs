@@ -61,7 +61,7 @@ namespace GennyMcGenFace.GennyMcGenFace
 
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
-                //typed list
+                //typed List
                 var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
                 return string.Format("{0}{1} = new List<{2}>() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, baseType.AsFullName, objAsStr);
             }
@@ -85,11 +85,11 @@ namespace GennyMcGenFace.GennyMcGenFace
             {
                 //typed Array
                 var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
+                return string.Format("{0}{1} = new {2} {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
             }
             else
             {
-                //generic list, such as string/int
+                //generic array, such as string/int
                 // var ListString = new List<System.String>() { "yay" };
                 // var ListAry = new String[] { "yay" };
                 return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));

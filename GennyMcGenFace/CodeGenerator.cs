@@ -31,7 +31,7 @@ namespace GennyMcGenFace.GennyMcGenFace
             foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
                 if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
-                str += GetParamValue(member, depth);
+                str += GetParamValue(member.Type, member.Name, depth);
             }
 
             return str;
@@ -45,10 +45,10 @@ namespace GennyMcGenFace.GennyMcGenFace
                 //list types
                 var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
                 //var baseType = member.ProjectItem.ContainingProject.CodeModel.CodeTypeFromFullName(GetBaseTypeFromList(member.Type.AsFullName));
+
                 var typeFullName = string.Format("List<{0}>", baseType.AsFullName); //and alternative to this could be member.Type.AsFullName
 
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth));
-                // var objAsStr = "";
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
 
                 return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
             }
@@ -59,67 +59,67 @@ namespace GennyMcGenFace.GennyMcGenFace
             }
         }
 
-        private static string GetParamValue(CodeProperty member, int depth)
+        private static string GetParamValue(CodeTypeRef member, string paramName, int depth)
         {
             var rand = new Random();
 
-            if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.Type.AsString == "System.DateTime")
+            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
             {
                 //DateTime
                 var year = DateTime.Now.Year;
                 var month = DateTime.Now.Month;
                 var day = DateTime.Now.Day;
                 var dateAsStr = string.Format("new DateTime({0}, {1}, {2})", year, month, day);
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), member.Name, dateAsStr);
+                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, dateAsStr);
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //defined types/objects we have created
-                return ParseObjects(member.Type, member.Name, depth);
+                return ParseObjects(member, paramName, depth);
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefString)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {
                 //string
-                return GetSpaces(depth) + member.Name + " = \"yay\",\r\n";
+                return GetSpaces(depth) + paramName + " = \"yay\",\r\n";
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
             {
                 //char
-                return GetSpaces(depth) + member.Name + " = 'a',\r\n";
+                return GetSpaces(depth) + paramName + " = 'a',\r\n";
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
             {
                 //bool
                 var val = rand.Next(0, 1) == 1 ? "true" : "false";
-                return GetSpaces(depth) + member.Name + " = " + val + ",\r\n";
+                return GetSpaces(depth) + paramName + " = " + val + ",\r\n";
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
             {
                 //numbers (except short)
                 var val = rand.Next(0, 999999999);
 
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), member.Name, val);
+                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, val);
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
             {
                 //short
                 var val = rand.Next(0, 9999);
-                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), member.Name, val);
+                return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, val);
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {
                 //array
-                return GetSpaces(depth) + member.Name + " = \"yay\",\r\n";
+                return GetSpaces(depth) + paramName + " = \"yay\",\r\n";
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
                 //byte
-                return GetSpaces(depth) + member.Name + " = new Byte(),\r\n";
+                return GetSpaces(depth) + paramName + " = new Byte(),\r\n";
             }
-            else if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
             {
                 //object
-                return GetSpaces(depth) + member.Name + " = new Object(),\r\n";
+                return GetSpaces(depth) + paramName + " = new Object(),\r\n";
             }
             else
             {

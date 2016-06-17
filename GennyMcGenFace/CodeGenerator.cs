@@ -31,6 +31,7 @@ namespace GennyMcGenFace.GennyMcGenFace
             foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
                 if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
+
                 str += GetParam(member.Type, member.Name, depth);
             }
 
@@ -43,27 +44,45 @@ namespace GennyMcGenFace.GennyMcGenFace
             if (member.CodeType.Name == "List" || member.CodeType.Name == "ICollection" || member.CodeType.Name == "IList" || member.CodeType.Name == "IEnumerable")
             {
                 //list types
-                string objAsStr = string.Empty;
-                var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
-                //var baseType = member.ProjectItem.ContainingProject.CodeModel.CodeTypeFromFullName(GetBaseTypeFromList(member.Type.AsFullName));
-
-                var typeFullName = string.Format("List<{0}>", baseType.AsFullName); //and alternative to this could be member.Type.AsFullName
-
-                if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-                {
-                    objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
-                }
-                else
-                {
-                    objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, GetParam(baseType, "", depth + 1));
-                }
-
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
+                return GetListParam(member, paramName, depth);
             }
             else
             {
                 //plain object
                 return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, member.AsFullName, IterateMembers(member.CodeType.Members, depth));
+            }
+        }
+
+        private static string GetListParam(CodeTypeRef member, string paramName, int depth)
+        {
+            var objAsStr = string.Empty;
+            var typeFullName = string.Empty;
+
+            var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
+
+            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
+            {
+                typeFullName = string.Format("{0}[]", RemoveSystemFromStr(baseType.AsFullName));
+            }
+            else
+            {
+                typeFullName = string.Format("List<{0}>", RemoveSystemFromStr(baseType.AsFullName)); //and alternative to this could be member.Type.AsFullName
+            }
+
+            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            {
+                //typed list
+                objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
+            }
+            else
+            {
+                //generic list, such as string/int
+                // var ListString = new List<System.String>() { "yay" };
+                // var ListAry = new String[] { "yay" };
+                return string.Format("{0}{1} = new {2}() {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
+
+                // objAsStr = string.Format("{0} {1} \r\n{2}{0},\r\n", GetSpaces(depth + 1), RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
             }
         }
 
@@ -107,7 +126,8 @@ namespace GennyMcGenFace.GennyMcGenFace
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {
                 //array
-                return "todo";
+                return GetListParam(member, paramName, depth);
+                // return "todo";
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
@@ -200,6 +220,16 @@ namespace GennyMcGenFace.GennyMcGenFace
             fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
             fullName = fullName.Replace(">", "");
             return fullName;
+        }
+
+        private static string RemoveSystemFromStr(string str)
+        {
+            if (str.StartsWith("System."))
+            {
+                str = str.Replace("System.", "");
+            }
+
+            return str;
         }
 
         private static string GetSpaces(int depth)

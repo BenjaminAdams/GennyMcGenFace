@@ -20,7 +20,7 @@ namespace GennyMcGenFace.GennyMcGenFace
         {
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
             str += IterateMembers(selectedClass.Members, 0);
-            str += "\r\n};";
+            str += "};";
             return str;
         }
 
@@ -55,24 +55,36 @@ namespace GennyMcGenFace.GennyMcGenFace
 
         private static string GetListParam(CodeTypeRef member, string paramName, int depth)
         {
-            var objAsStr = string.Empty;
-            var typeFullName = string.Empty;
-
             var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
-
-            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
-            {
-                typeFullName = string.Format("{0}[]", RemoveSystemFromStr(baseType.AsFullName));
-            }
-            else
-            {
-                typeFullName = string.Format("List<{0}>", RemoveSystemFromStr(baseType.AsFullName)); //and alternative to this could be member.Type.AsFullName
-            }
+            if (baseType == null) return string.Empty;
+            //var typeFullName = string.Format("List<{0}>", RemoveSystemFromStr(baseType.AsFullName)); //and alternative to this could be member.Type.AsFullName
 
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //typed list
-                objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                return string.Format("{0}{1} = new List<{2}>() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, baseType.AsFullName, objAsStr);
+            }
+            else
+            {
+                //generic list, such as string/int
+                // var ListString = new List<System.String>() { "yay" };
+                // var ListAry = new String[] { "yay" };
+                return string.Format("{0}{1} = new List<{2}>() {{ {3} }},\r\n", GetSpaces(depth), paramName, RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
+            }
+        }
+
+        private static string GetArrayParam(CodeTypeRef member, string paramName, int depth)
+        {
+            var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromArray(member.AsString));
+            if (baseType == null) return string.Empty;
+
+            var typeFullName = string.Format("{0}[]", RemoveSystemFromStr(baseType.AsFullName));
+
+            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            {
+                //typed Array
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
                 return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
             }
             else
@@ -80,7 +92,7 @@ namespace GennyMcGenFace.GennyMcGenFace
                 //generic list, such as string/int
                 // var ListString = new List<System.String>() { "yay" };
                 // var ListAry = new String[] { "yay" };
-                return string.Format("{0}{1} = new {2}() {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
+                return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
 
                 // objAsStr = string.Format("{0} {1} \r\n{2}{0},\r\n", GetSpaces(depth + 1), RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
             }
@@ -126,8 +138,7 @@ namespace GennyMcGenFace.GennyMcGenFace
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {
                 //array
-                return GetListParam(member, paramName, depth);
-                // return "todo";
+                return GetArrayParam(member, paramName, depth);
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
@@ -220,6 +231,12 @@ namespace GennyMcGenFace.GennyMcGenFace
             fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
             fullName = fullName.Replace(">", "");
             return fullName;
+        }
+
+        //super ugly hack to get the base type that the list is on.  Not sure how else to do it
+        private static string GetBaseTypeFromArray(string fullName)
+        {
+            return fullName.Replace("[]", "");
         }
 
         private static string RemoveSystemFromStr(string str)

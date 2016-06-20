@@ -4,8 +4,9 @@ using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using StatusBar = GennyMcGenFace.UI.StatusBar;
 
-namespace GennyMcGenFace
+namespace GennyMcGenFace.Parser
 {
     /// <summary>
     /// Get information about the current project the extension is installed on
@@ -13,9 +14,10 @@ namespace GennyMcGenFace
     public static class CodeDiscoverer
     {
         //loads all classes in solution
-        public static void ClassSearch(EnvDTE.Projects projects, List<CodeClass> foundClasses, StatusBar statusBar)
+        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, StatusBar statusBar)
         {
             var projs = CodeDiscoverer.Projects();
+            var foundClasses = new List<CodeClass>();
 
             var i = 0;
             foreach (var proj in projs)
@@ -49,7 +51,10 @@ namespace GennyMcGenFace
                 }
             }
 
+            if (foundClasses == null || foundClasses.Count == 0) throw new Exception("Could not find any classes");
+            foundClasses.Sort((x, y) => x.FullName.CompareTo(y.FullName));
             statusBar.End();
+            return foundClasses;
         }
 
         public static bool IsValidPublicMember(CodeElement member)

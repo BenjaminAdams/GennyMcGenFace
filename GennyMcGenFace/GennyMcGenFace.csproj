@@ -128,7 +128,8 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CodeGenerator.cs" />
+    <Compile Include="Models\GenOptions.cs" />
+    <Compile Include="Parser\CodeGenerator.cs" />
     <Compile Include="ComboListMatcher.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -143,10 +144,10 @@
     <Compile Include="GennyMcGenFacePackage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PkgCmdID.cs" />
-    <Compile Include="CodeDiscoverer.cs" />
+    <Compile Include="Parser\CodeDiscoverer.cs" />
     <Compile Include="Helpers\StaticRandom.cs" />
-    <Compile Include="StatusBar.cs" />
-    <Compile Include="Words.cs" />
+    <Compile Include="UI\StatusBar.cs" />
+    <Compile Include="Helpers\Words.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx">
@@ -180,7 +181,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\mcface.ico" />
-    <Content Include="Resources\GennyExample.jpg">
+    <Content Include="Resources\gennExample.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>

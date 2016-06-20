@@ -1,5 +1,7 @@
 ﻿using EnvDTE;
 using FastColoredTextBoxNS;
+using GennyMcGenFace.Models;
+using GennyMcGenFace.Parser;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +13,7 @@ namespace GennyMcGenFace.UI
     public class ClassGenUI
     {
         private readonly List<CodeClass> _classes;
+        private static GenOptions _opts = new GenOptions();
 
         private ComboListMatcher _classNameCombo1 = new ComboListMatcher()
         {
@@ -27,6 +30,30 @@ namespace GennyMcGenFace.UI
             Top = 90,
             Width = 700,
             Height = 600,
+        };
+
+        private NumericUpDown _wordsTxt = new NumericUpDown()
+        {
+            Width = 50,
+            Height = 50,
+            Top = 15,
+            Left = 700,
+            Value = _opts.WordsInStrings,
+            Increment = 1,
+            Maximum = 9,
+            Minimum = 0
+        };
+
+        private NumericUpDown _intLengthTxt = new NumericUpDown()
+        {
+            Width = 50,
+            Height = 50,
+            Top = 15,
+            Left = 550,
+            Value = _opts.IntLength,
+            Increment = 1,
+            Maximum = 9,
+            Minimum = 0
         };
 
         public ClassGenUI(List<CodeClass> classes)
@@ -60,13 +87,33 @@ namespace GennyMcGenFace.UI
                 StartPosition = FormStartPosition.CenterScreen
             };
 
-            var textLabel = new Label() { Left = 50, Top = 25, Text = "ClassName" };
-            _classNameCombo1.SelectedValueChanged += (sender, e) => { ChangeSelectedClass(); };
+            prompt.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
 
+            prompt.Controls.Add(new Label() { Left = 615, Top = 17, AutoSize = true, Text = "Words in strings" });
+            prompt.Controls.Add(new Label() { Left = 480, Top = 17, AutoSize = true, Text = "Number size" });
+
+            _classNameCombo1.SelectedValueChanged += (sender, e) => { ChangeSelectedClass(); };
+            _wordsTxt.ValueChanged += (sender, e) => { ChangeWordsInStr(); };
+            _intLengthTxt.ValueChanged += (sender, e) => { ChangeIntLength(); };
+
+            prompt.Controls.Add(_wordsTxt);
+            prompt.Controls.Add(_intLengthTxt);
             prompt.Controls.Add(_classNameCombo1);
             prompt.Controls.Add(_editor);
-            prompt.Controls.Add(textLabel);
+
             prompt.ShowDialog();
+        }
+
+        private void ChangeWordsInStr()
+        {
+            _opts.WordsInStrings = _wordsTxt.Value;
+            ChangeSelectedClass();
+        }
+
+        private void ChangeIntLength()
+        {
+            _opts.IntLength = _intLengthTxt.Value;
+            ChangeSelectedClass();
         }
 
         private void ChangeSelectedClass()
@@ -77,7 +124,7 @@ namespace GennyMcGenFace.UI
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue);
             if (selectedClass == null) throw new Exception("Class not found");
 
-            var generatedCode = CodeGenerator.GenerateClass(selectedClass);
+            var generatedCode = CodeGenerator.GenerateClass(selectedClass, _opts);
             _editor.Text = generatedCode;
         }
 

@@ -1,11 +1,10 @@
-﻿using GennyMcGenFace.Helpers;
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace GennyMcGenFace
+namespace GennyMcGenFace.Helpers
 {
     public static class Words
     {
@@ -19,7 +18,7 @@ namespace GennyMcGenFace
             return _words[StaticRandom.Instance.Next(1, _words.Length)];
         }
 
-        public static string Gen(int count)
+        public static string Gen(decimal count)
         {
             var str = new StringBuilder();
             for (var i = 0; i < count; i++)

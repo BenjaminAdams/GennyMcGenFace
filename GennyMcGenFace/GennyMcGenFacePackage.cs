@@ -1,5 +1,6 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using GennyMcGenFace.Parser;
 using GennyMcGenFace.UI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -7,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
+using StatusBar = GennyMcGenFace.UI.StatusBar;
 
 namespace GennyMcGenFace
 {
@@ -22,23 +24,21 @@ namespace GennyMcGenFace
             base.Initialize();
 
             // Add our command handlers for menu (commands must exist in the .vsct file)
-            OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (null != mcs)
-            {
-                // Create the command for the menu item.
-                var genClassId = new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass);
-                var menuItem = new MenuCommand(DisplayGenClassUI, genClassId);
-                mcs.AddCommand(menuItem);
-            }
+            var mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
+            if (mcs == null) throw new Exception("Could not load plugin");
+
+            // Create the command for the menu item.
+            var genClassId = new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass);
+            mcs.AddCommand(new MenuCommand(DisplayGenClassUI, genClassId));
         }
 
         private void DisplayGenClassUI(object sender, EventArgs e)
         {
             var dte = GetService(typeof(SDTE)) as DTE2;
+            if (dte == null) throw new Exception("Could not load plugin");
             if (dte.SelectedItems.Count <= 0) return;
 
             var foundClasses = GetClasses(dte);
-            if (foundClasses == null || foundClasses.Count == 0) throw new Exception("Must have at least one class in your solution with at least one public property");
 
             var dialog = new ClassGenUI(foundClasses);
             dialog.ShowDialog();
@@ -46,12 +46,8 @@ namespace GennyMcGenFace
 
         private List<CodeClass> GetClasses(DTE2 dte)
         {
-            List<CodeClass> foundClasses = new List<CodeClass>();
             var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
-            CodeDiscoverer.ClassSearch(dte.Solution.Projects, foundClasses, statusBar);
-            foundClasses.Sort((x, y) => x.FullName.CompareTo(y.FullName));
-
-            return foundClasses;
+            return CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar);
         }
     }
 }

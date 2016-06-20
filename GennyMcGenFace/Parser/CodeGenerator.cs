@@ -1,14 +1,18 @@
 ﻿using EnvDTE;
 using GennyMcGenFace.Helpers;
+using GennyMcGenFace.Models;
 using System;
 using System.Linq;
 
-namespace GennyMcGenFace
+namespace GennyMcGenFace.Parser
 {
     public static class CodeGenerator
     {
-        public static string GenerateClass(CodeClass selectedClass)
+        private static GenOptions _opts;
+
+        public static string GenerateClass(CodeClass selectedClass, GenOptions opts)
         {
+            _opts = opts;
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
             str += IterateMembers(selectedClass.Members, 0);
             str += "};";
@@ -137,7 +141,7 @@ namespace GennyMcGenFace
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {
                 //string
-                return string.Format("\"{0}\"", Words.Gen(2));
+                return string.Format("\"{0}\"", Words.Gen(_opts.WordsInStrings));
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
             {
@@ -153,12 +157,16 @@ namespace GennyMcGenFace
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
             {
                 //numbers (except short)
-                return StaticRandom.Instance.Next(0, 999999999).ToString();
+                //return StaticRandom.Instance.Next(999999999).ToString();
+                if (_opts.IntLength == 0) return "0";
+                return StaticRandom.Instance.Next(_opts.GetMaxIntLength()).ToString();
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
             {
                 //short
-                return StaticRandom.Instance.Next(0, 9999).ToString();
+                if (_opts.IntLength == 0) return "0";
+                var maxRnd = _opts.IntLength > 4 ? 9999 : _opts.GetMaxIntLength();
+                return StaticRandom.Instance.Next(maxRnd).ToString();
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {

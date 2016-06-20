@@ -1,5 +1,6 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using GennyMcGenFace.UI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
@@ -25,13 +26,13 @@ namespace GennyMcGenFace
             if (null != mcs)
             {
                 // Create the command for the menu item.
-                CommandID menuCommandID = new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass);
-                MenuCommand menuItem = new MenuCommand(MenuItemCallback, menuCommandID);
+                var genClassId = new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass);
+                var menuItem = new MenuCommand(DisplayGenClassUI, genClassId);
                 mcs.AddCommand(menuItem);
             }
         }
 
-        private void MenuItemCallback(object sender, EventArgs e)
+        private void DisplayGenClassUI(object sender, EventArgs e)
         {
             var dte = GetService(typeof(SDTE)) as DTE2;
             if (dte.SelectedItems.Count <= 0) return;
@@ -39,7 +40,7 @@ namespace GennyMcGenFace
             var foundClasses = GetClasses(dte);
             if (foundClasses == null || foundClasses.Count == 0) throw new Exception("Must have at least one class in your solution with at least one public property");
 
-            var dialog = new Prompt(foundClasses);
+            var dialog = new ClassGenUI(foundClasses);
             dialog.ShowDialog();
         }
 

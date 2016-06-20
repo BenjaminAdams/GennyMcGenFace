@@ -2,28 +2,21 @@
 using FastColoredTextBoxNS;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Language = FastColoredTextBoxNS.Language;
 
-namespace GennyMcGenFace
+namespace GennyMcGenFace.UI
 {
-    public class TMP
-    {
-        public string tmp { get; set; }
-    }
-
-    public class Prompt
+    public class ClassGenUI
     {
         private readonly List<CodeClass> _classes;
-        private int lastCaretPos = 0;
 
         private ComboListMatcher _classNameCombo1 = new ComboListMatcher()
         {
             Left = 50,
             Top = 50,
-            Width = 600,
+            Width = 700,
             AutoCompleteMode = AutoCompleteMode.SuggestAppend,
             AutoCompleteSource = AutoCompleteSource.CustomSource
         };
@@ -32,11 +25,11 @@ namespace GennyMcGenFace
         {
             Left = 50,
             Top = 90,
-            Width = 600,
-            Height = 500,
+            Width = 700,
+            Height = 600,
         };
 
-        public Prompt(List<CodeClass> classes)
+        public ClassGenUI(List<CodeClass> classes)
         {
             _classes = classes;
             var dataSource = BuildAutoCompleteSource();
@@ -60,8 +53,8 @@ namespace GennyMcGenFace
         {
             var prompt = new Form()
             {
-                Width = 700,
-                Height = 640,
+                Width = 800,
+                Height = 740,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = "Pick a class",
                 StartPosition = FormStartPosition.CenterScreen
@@ -86,24 +79,11 @@ namespace GennyMcGenFace
 
             var generatedCode = CodeGenerator.GenerateClass(selectedClass);
             _editor.Text = generatedCode;
-            //_editor.ProcessAllLines();
         }
 
         private void AddStyles()
         {
             _editor.Language = Language.CSharp;
-            //_editor.SyntaxHighlighter= new SyntaxHighlighter(){};
-            //_editor.Settings.Comment = "//";
-            //_editor.Settings.KeywordColor = Color.Blue;
-            //_editor.Settings.CommentColor = Color.Green;
-            //_editor.Settings.StringColor = Color.DarkRed;
-            //_editor.Settings.IntegerColor = Color.DarkOrange;
-            //_editor.Settings.EnableStrings = true;
-            //_editor.Settings.EnableIntegers = true;
-            //_editor.Settings.Keywords.AddRange(new string[] { "break", "case", "catch", "false", "interface","namespace", "new", "null", "object", "private", "protected", "public", "return", "true", "try", });
-            //_editor.Settings.Keywords.AddRange(new string[] { "var", "datetime", "bool", "byte", "char", "class", "const", "decimal", "double", "enum", "float", "int", "long", "static", "string", "void" });
-            //_editor.CompileKeywords();
-            //_editor.ProcessAllLines();
         }
     }
 }

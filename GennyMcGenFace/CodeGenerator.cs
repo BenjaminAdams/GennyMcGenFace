@@ -1,4 +1,5 @@
 ﻿using EnvDTE;
+using GennyMcGenFace.Helpers;
 using System;
 using System.Linq;
 
@@ -50,6 +51,11 @@ namespace GennyMcGenFace
                 {
                     //Guid
                     return string.Format("{0}{1} = new Guid(\"{2}\"),\r\n", GetSpaces(depth), paramName, Guid.NewGuid());
+                }
+                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.CodeType != null && member.CodeType.Members != null && member.CodeType.Members.Count > 0 && member.CodeType.Kind == vsCMElement.vsCMElementEnum)
+                {
+                    //Enums
+                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
@@ -117,6 +123,11 @@ namespace GennyMcGenFace
                 var month = DateTime.Now.Month;
                 var day = DateTime.Now.Day;
                 return string.Format("new DateTime({0}, {1}, {2})", year, month, day);
+            }
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.CodeType != null && member.CodeType.Members != null && member.CodeType.Members.Count > 0 && member.CodeType.Kind == vsCMElement.vsCMElementEnum)
+            {
+                //Enums
+                return member.CodeType.Members.Item(1).FullName;
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {

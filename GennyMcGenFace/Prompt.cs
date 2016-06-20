@@ -1,13 +1,19 @@
 ﻿using EnvDTE;
-using ScintillaNET;
+using FastColoredTextBoxNS;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using Language = FastColoredTextBoxNS.Language;
 
 namespace GennyMcGenFace
 {
+    public class TMP
+    {
+        public string tmp { get; set; }
+    }
+
     public class Prompt
     {
         private readonly List<CodeClass> _classes;
@@ -22,13 +28,12 @@ namespace GennyMcGenFace
             AutoCompleteSource = AutoCompleteSource.CustomSource
         };
 
-        private Scintilla _editor = new Scintilla()
+        private FastColoredTextBox _editor = new FastColoredTextBox
         {
             Left = 50,
             Top = 90,
             Width = 600,
             Height = 500,
-            Lexer = Lexer.Cpp
         };
 
         public Prompt(List<CodeClass> classes)
@@ -81,36 +86,24 @@ namespace GennyMcGenFace
 
             var generatedCode = CodeGenerator.GenerateClass(selectedClass);
             _editor.Text = generatedCode;
+            //_editor.ProcessAllLines();
         }
 
         private void AddStyles()
         {
-            _editor.StyleResetDefault();
-            _editor.Styles[Style.Default].Font = "Consolas";
-            _editor.Styles[Style.Default].Size = 10;
-            _editor.StyleClearAll();
-
-            // Configure the CPP (C#) lexer styles
-            _editor.Styles[Style.Cpp.Default].ForeColor = Color.Silver;
-            _editor.Styles[Style.Cpp.Comment].ForeColor = Color.FromArgb(0, 128, 0); // Green
-            _editor.Styles[Style.Cpp.CommentLine].ForeColor = Color.FromArgb(0, 128, 0); // Green
-            _editor.Styles[Style.Cpp.CommentLineDoc].ForeColor = Color.FromArgb(128, 128, 128); // Gray
-            _editor.Styles[Style.Cpp.Number].ForeColor = Color.Olive;
-            _editor.Styles[Style.Cpp.Word].ForeColor = Color.Blue;
-            _editor.Styles[Style.Cpp.Word2].ForeColor = Color.Blue;
-            _editor.Styles[Style.Cpp.String].ForeColor = Color.FromArgb(163, 21, 21); // Red
-            _editor.Styles[Style.Cpp.Character].ForeColor = Color.FromArgb(163, 21, 21); // Red
-            _editor.Styles[Style.Cpp.Verbatim].ForeColor = Color.FromArgb(163, 21, 21); // Red
-            _editor.Styles[Style.Cpp.StringEol].BackColor = Color.Pink;
-            _editor.Styles[Style.Cpp.Operator].ForeColor = Color.Purple;
-            _editor.Styles[Style.Cpp.Preprocessor].ForeColor = Color.Maroon;
-            _editor.Lexer = Lexer.Cpp;
-
-            _editor.IndentationGuides = IndentView.LookBoth;
-
-            // Set the keywords
-            _editor.SetKeywords(0, "abstract as base break case catch checked continue default delegate do else event explicit extern false finally fixed for foreach goto if implicit in interface internal is lock namespace new null object operator out override params private protected public readonly ref return sealed sizeof stackalloc switch this throw true try typeof unchecked unsafe using virtual while");
-            _editor.SetKeywords(1, "var datetime bool byte char class const decimal double enum float int long sbyte short static string struct uint ulong ushort void");
+            _editor.Language = Language.CSharp;
+            //_editor.SyntaxHighlighter= new SyntaxHighlighter(){};
+            //_editor.Settings.Comment = "//";
+            //_editor.Settings.KeywordColor = Color.Blue;
+            //_editor.Settings.CommentColor = Color.Green;
+            //_editor.Settings.StringColor = Color.DarkRed;
+            //_editor.Settings.IntegerColor = Color.DarkOrange;
+            //_editor.Settings.EnableStrings = true;
+            //_editor.Settings.EnableIntegers = true;
+            //_editor.Settings.Keywords.AddRange(new string[] { "break", "case", "catch", "false", "interface","namespace", "new", "null", "object", "private", "protected", "public", "return", "true", "try", });
+            //_editor.Settings.Keywords.AddRange(new string[] { "var", "datetime", "bool", "byte", "char", "class", "const", "decimal", "double", "enum", "float", "int", "long", "static", "string", "void" });
+            //_editor.CompileKeywords();
+            //_editor.ProcessAllLines();
         }
     }
 }

@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace GennyMcGenFace
 {
-    internal class ComboListMatcher : ComboBox, IMessageFilter
+    public class ComboListMatcher : ComboBox, IMessageFilter
     {
         private Control ComboParentForm; // Or use type "Form"
         private ListBox listBoxChild;

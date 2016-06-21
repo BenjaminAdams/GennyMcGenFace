@@ -134,6 +134,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Guids.cs" />
+    <Compile Include="UI\BaseUI.cs" />
     <Compile Include="UI\ClassGenUI.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>

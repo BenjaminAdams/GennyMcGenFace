@@ -19,9 +19,14 @@ namespace GennyMcGenFace
     [Guid(GuidList.guidGennyMcGenFacePkgString)]
     public sealed class GennyMcGenFacePackage : Package
     {
+        private DTE2 _dte;
+        private StatusBar _statusBar;
+
         protected override void Initialize()
         {
             base.Initialize();
+
+            _dte = GetService(typeof(SDTE)) as DTE2;
 
             // Add our command handlers for menu (commands must exist in the .vsct file)
             var mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
@@ -34,14 +39,10 @@ namespace GennyMcGenFace
 
         private void DisplayGenClassUI(object sender, EventArgs e)
         {
-            var dte = GetService(typeof(SDTE)) as DTE2;
-            if (dte == null) throw new Exception("Could not load plugin");
-            if (dte.SelectedItems.Count <= 0) return;
+            if (_dte == null) throw new Exception("Could not load plugin");
+            var foundClasses = GetClasses(_dte);
 
-            var foundClasses = GetClasses(dte);
-
-            var dialog = new ClassGenUI(foundClasses);
-            dialog.ShowDialog();
+            new ClassGenUI(foundClasses);
         }
 
         private List<CodeClass> GetClasses(DTE2 dte)

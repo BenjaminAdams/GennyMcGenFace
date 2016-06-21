@@ -81,6 +81,14 @@
           <ButtonText>Generate Mapper Unit Test</ButtonText>
         </Strings>
       </Button>
+
+      <Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenUnitTest" priority="0x0101" type="Button">
+        <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />
+        <Icon guid="mcFaceGuid" id="mcFaceImg" />
+        <Strings>
+          <ButtonText>Generate Unit Test</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
 
     <!--The bitmaps section is used to define the bitmaps that are used for the commands.-->
@@ -104,6 +112,7 @@
       <IDSymbol name="MyMenuGroup" value="0x1020" />
       <IDSymbol name="cmdGennyGenClass" value="0x0100" />
       <IDSymbol name="cmdGennyGenMapperTest" value="0x0171" />
+      <IDSymbol name="cmdGennyGenUnitTest" value="0x0174" />
       <IDSymbol name="TopLevelMenu" value="0x1021" />
     </GuidSymbol>
 

@@ -33,7 +33,7 @@ namespace GennyMcGenFace.UI
             _editor.Height = 600;
 
             _mainForm.Shown += GenerateEditorTxt;
-            _mainForm.ShowDialog();           
+            _mainForm.ShowDialog();
         }
 
         protected override void GenerateEditorTxt(object sender, EventArgs e)
@@ -47,7 +47,7 @@ namespace GennyMcGenFace.UI
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) throw new Exception("Class not found");
 
-            var generatedCode = CodeGenerator.GenerateClass(selectedClass, _opts);
+            var generatedCode = ClassGenerator.GenerateClassStr(selectedClass, _opts);
             _editor.Text = generatedCode;
         }
 
@@ -58,7 +58,6 @@ namespace GennyMcGenFace.UI
 
             _mainForm.Controls.Add(new Label() { Left = 50, Top = 85, Text = "ClassName" });
             _mainForm.Controls.Add(_classNameCombo2);
-            // _classNameCombo2.SelectedValueChanged += GenerateEditorTxt;
             _classNameCombo2.SelectionChangeCommitted += GenerateEditorTxt;
         }
     }

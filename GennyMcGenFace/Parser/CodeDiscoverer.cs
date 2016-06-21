@@ -14,7 +14,7 @@ namespace GennyMcGenFace.Parser
     public static class CodeDiscoverer
     {
         //loads all classes in solution
-        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, StatusBar statusBar)
+        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, StatusBar statusBar, bool withProperties)
         {
             var projs = CodeDiscoverer.Projects();
             var foundClasses = new List<CodeClass>();
@@ -42,7 +42,11 @@ namespace GennyMcGenFace.Parser
                             if (member == null || member.Kind != vsCMElement.vsCMElementClass)
                                 continue;
 
-                            if (HasOnePublicMember(member))
+                            if (withProperties == true && HasOnePublicProperty(member))
+                            {
+                                foundClasses.Add(member);
+                            }
+                            else if (withProperties == false && HasOneFunction(member))
                             {
                                 foundClasses.Add(member);
                             }
@@ -57,7 +61,7 @@ namespace GennyMcGenFace.Parser
             return foundClasses;
         }
 
-        public static bool IsValidPublicMember(CodeElement member)
+        public static bool IsValidPublicProperty(CodeElement member)
         {
             try
             {
@@ -78,13 +82,23 @@ namespace GennyMcGenFace.Parser
             }
         }
 
-        public static bool HasOnePublicMember(CodeClass selectedClass)
+        public static bool HasOnePublicProperty(CodeClass selectedClass)
         {
             foreach (CodeElement member in selectedClass.Members.OfType<CodeElement>())
             {
-                if (IsValidPublicMember(member) == false) continue;
+                if (IsValidPublicProperty(member) == false) continue;
 
                 return true;
+            }
+
+            return false;
+        }
+
+        public static bool HasOneFunction(CodeClass selectedClass)
+        {
+            foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
+            {
+                if (member.Kind == vsCMElement.vsCMElementFunction) return true;
             }
 
             return false;

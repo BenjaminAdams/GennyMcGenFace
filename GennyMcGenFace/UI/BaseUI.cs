@@ -100,7 +100,8 @@ namespace GennyMcGenFace.UI
             _classNameCombo1.DataSource = _dataSource;
             _mainForm.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
             _mainForm.Controls.Add(_classNameCombo1);
-            _classNameCombo1.SelectionChangeCommitted += GenerateEditorTxt;
+            //_classNameCombo1.SelectionChangeCommitted += GenerateEditorTxt;
+            _classNameCombo1.SelectedIndexChanged += GenerateEditorTxt;
         }
 
         protected void ChangeWordsInStr(object sender, EventArgs e)

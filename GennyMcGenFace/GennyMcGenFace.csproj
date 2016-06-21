@@ -129,11 +129,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\GenOptions.cs" />
-    <Compile Include="Parser\CodeGenerator.cs" />
+    <Compile Include="Parser\ClassGenerator.cs" />
     <Compile Include="ComboListMatcher.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Guids.cs" />
+    <Compile Include="Parser\UnitTestGenerator.cs" />
     <Compile Include="UI\BaseUI.cs" />
     <Compile Include="UI\ClassGenUI.cs" />
     <Compile Include="Resources.Designer.cs">
@@ -150,6 +151,7 @@
     <Compile Include="UI\MapperGenUI.cs" />
     <Compile Include="UI\StatusBar.cs" />
     <Compile Include="Helpers\Words.cs" />
+    <Compile Include="UI\UnitTestGenUI.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx">

@@ -3,15 +3,17 @@ using GennyMcGenFace.Parser;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace GennyMcGenFace.UI
 {
-    public class ClassGenUI : BaseUI
+    public class UnitTestGenUI : BaseUI
     {
-        public ClassGenUI(List<CodeClass> classes)
+        public UnitTestGenUI(List<CodeClass> classes)
         {
             base.Init(classes);
-            _mainForm.Text = "Generate Random Values for a Class";
+            _mainForm.Text = "Generate Unit Test for a Class";
             InitTopRightControls();
             InitCombo1();
 
@@ -32,7 +34,8 @@ namespace GennyMcGenFace.UI
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) throw new Exception("Class not found");
 
-            var generatedCode = ClassGenerator.GenerateClassStr(selectedClass, _opts);
+            var generatedCode = UnitTestGenerator.Gen(selectedClass, _opts);
+
             _editor.Text = generatedCode;
         }
     }

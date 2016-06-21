@@ -6,11 +6,11 @@ using System.Linq;
 
 namespace GennyMcGenFace.Parser
 {
-    public static class CodeGenerator
+    public static class ClassGenerator
     {
         private static GenOptions _opts;
 
-        public static string GenerateClass(CodeClass selectedClass, GenOptions opts)
+        public static string GenerateClassStr(CodeClass selectedClass, GenOptions opts)
         {
             _opts = opts;
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
@@ -27,7 +27,7 @@ namespace GennyMcGenFace.Parser
             {
                 try
                 {
-                    if (CodeDiscoverer.IsValidPublicMember((CodeElement)member) == false) continue;
+                    if (CodeDiscoverer.IsValidPublicProperty((CodeElement)member) == false) continue;
 
                     str += GetParam(member.Type, member.Name, depth);
                 }
@@ -157,7 +157,6 @@ namespace GennyMcGenFace.Parser
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
             {
                 //numbers (except short)
-                //return StaticRandom.Instance.Next(999999999).ToString();
                 if (_opts.IntLength == 0) return "0";
                 return StaticRandom.Instance.Next(_opts.GetMaxIntLength()).ToString();
             }
@@ -301,7 +300,7 @@ namespace GennyMcGenFace.Parser
             var spaces = "";
             for (var i = 0; i < depth; i++)
             {
-                spaces += "   ";
+                spaces += "    ";
             }
 
             return spaces;

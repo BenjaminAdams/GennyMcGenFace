@@ -1,5 +1,4 @@
 ﻿using EnvDTE;
-using FastColoredTextBoxNS;
 using GennyMcGenFace.Parser;
 using System;
 using System.Collections.Generic;
@@ -12,20 +11,25 @@ namespace GennyMcGenFace.UI
         public ClassGenUI(List<CodeClass> classes)
         {
             base.Init(classes);
-            _mainForm.ShowDialog();
+            _mainForm.Text = "Generate Random Values for a Class";
+            InitTopRightControls();
+            InitCombo1();
 
             _editor.Left = 50;
             _editor.Top = 90;
             _editor.Width = 700;
             _editor.Height = 600;
+
+            _mainForm.ShowDialog();
         }
 
-        protected override void Redraw()
+        protected override void GenerateEditorTxt()
         {
-            var promptValue = _classNameCombo1.Text;
-            if (promptValue == "") return;
+            var promptValue1 = "";
+            // var promptValue1 = _classNameCombo1.Text;
+            // if (string.IsNullOrWhiteSpace(promptValue1)) throw new Exception("Class name blank");
 
-            var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue);
+            var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) throw new Exception("Class not found");
 
             var generatedCode = CodeGenerator.GenerateClass(selectedClass, _opts);

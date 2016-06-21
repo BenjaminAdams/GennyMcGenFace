@@ -70,7 +70,15 @@
         <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />
         <Icon guid="mcFaceGuid" id="mcFaceImg" />
         <Strings>
-          <ButtonText>Generate values for a class</ButtonText>
+          <ButtonText>Generate Values for a Class</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenMapperTest" priority="0x0101" type="Button">
+        <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />
+        <Icon guid="mcFaceGuid" id="mcFaceImg" />
+        <Strings>
+          <ButtonText>Generate Mapper Unit Test</ButtonText>
         </Strings>
       </Button>
     </Buttons>
@@ -95,6 +103,7 @@
     <GuidSymbol name="guidGennyMcGenFaceCmdSet" value="{d3dcaf60-0409-47ec-adb4-6f120ed8dff4}">
       <IDSymbol name="MyMenuGroup" value="0x1020" />
       <IDSymbol name="cmdGennyGenClass" value="0x0100" />
+      <IDSymbol name="cmdGennyGenMapperTest" value="0x0171" />
       <IDSymbol name="TopLevelMenu" value="0x1021" />
     </GuidSymbol>
 

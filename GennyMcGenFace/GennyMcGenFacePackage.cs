@@ -19,30 +19,35 @@ namespace GennyMcGenFace
     [Guid(GuidList.guidGennyMcGenFacePkgString)]
     public sealed class GennyMcGenFacePackage : Package
     {
-        private DTE2 _dte;
-        private StatusBar _statusBar;
-
         protected override void Initialize()
         {
             base.Initialize();
-
-            _dte = GetService(typeof(SDTE)) as DTE2;
 
             // Add our command handlers for menu (commands must exist in the .vsct file)
             var mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (mcs == null) throw new Exception("Could not load plugin");
 
             // Create the command for the menu item.
-            var genClassId = new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass);
-            mcs.AddCommand(new MenuCommand(DisplayGenClassUI, genClassId));
+            mcs.AddCommand(new MenuCommand(DisplayGenClassUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass)));
+            mcs.AddCommand(new MenuCommand(DisplayGenMapperTestUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenMapperTest)));
         }
 
         private void DisplayGenClassUI(object sender, EventArgs e)
         {
-            if (_dte == null) throw new Exception("Could not load plugin");
-            var foundClasses = GetClasses(_dte);
+            var dte = GetService(typeof(SDTE)) as DTE2;
+            if (dte == null) throw new Exception("Could not load plugin");
+            var foundClasses = GetClasses(dte);
 
-            new ClassGenUI(foundClasses);
+            var ui = new ClassGenUI(foundClasses);
+        }
+
+        private void DisplayGenMapperTestUI(object sender, EventArgs e)
+        {
+            var dte = GetService(typeof(SDTE)) as DTE2;
+            if (dte == null) throw new Exception("Could not load plugin");
+            var foundClasses = GetClasses(dte);
+
+            var ui = new MapperGenUI(foundClasses);
         }
 
         private List<CodeClass> GetClasses(DTE2 dte)

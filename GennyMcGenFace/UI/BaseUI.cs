@@ -14,10 +14,11 @@ namespace GennyMcGenFace.UI
     {
         protected List<CodeClass> _classes;
         protected static GenOptions _opts = new GenOptions();
-
         protected Form _mainForm;
+        protected FastColoredTextBox _editor = new FastColoredTextBox();
+        protected AutoCompleteStringCollection _dataSource;
 
-        protected ComboListMatcher _classNameCombo1 = new ComboListMatcher()
+        protected ComboBox _classNameCombo1 = new ComboListMatcher
         {
             Left = 50,
             Top = 50,
@@ -26,41 +27,23 @@ namespace GennyMcGenFace.UI
             AutoCompleteSource = AutoCompleteSource.CustomSource
         };
 
-        protected FastColoredTextBox _editor = new FastColoredTextBox
+        protected void Init(List<CodeClass> classes)
         {
-            Left = 50,
-            Top = 90,
-            Width = 700,
-            Height = 600,
-        };
+            _classes = classes;
+            _editor.Language = Language.CSharp;
+            _dataSource = BuildAutoCompleteSource();
 
-        protected NumericUpDown _wordsTxt = new NumericUpDown()
-        {
-            Width = 50,
-            Height = 50,
-            Top = 15,
-            Left = 700,
-            Value = _opts.WordsInStrings,
-            Increment = 1,
-            Maximum = 9,
-            Minimum = 0
-        };
+            _mainForm = new Form()
+            {
+                Width = 800,
+                Height = 740,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = "Pick a class",
+                StartPosition = FormStartPosition.CenterScreen
+            };
 
-        protected Label _classNameCombo1Lbl = new Label() { Left = 50, Top = 25, Text = "ClassName" };
-        protected Label _wordsLbl = new Label() { Left = 615, Top = 17, AutoSize = true, Text = "Words in strings" };
-        protected Label _intLengthLbl = new Label() { Left = 480, Top = 17, AutoSize = true, Text = "Number size" };
-
-        protected NumericUpDown _intLengthTxt = new NumericUpDown()
-        {
-            Width = 50,
-            Height = 50,
-            Top = 15,
-            Left = 550,
-            Value = _opts.IntLength,
-            Increment = 1,
-            Maximum = 9,
-            Minimum = 0
-        };
+            _mainForm.Controls.Add(_editor);
+        }
 
         protected AutoCompleteStringCollection BuildAutoCompleteSource()
         {
@@ -73,51 +56,81 @@ namespace GennyMcGenFace.UI
             return classList;
         }
 
-        protected void Init(List<CodeClass> classes)
+        protected void InitTopRightControls()
         {
-            _classes = classes;
-            var dataSource = BuildAutoCompleteSource();
-            _classNameCombo1.AutoCompleteCustomSource = dataSource;
-            _classNameCombo1.DataSource = dataSource;
-            _editor.Language = Language.CSharp;
-
-            _mainForm = new Form()
+            var wordsTxt = new NumericUpDown()
             {
-                Width = 800,
-                Height = 740,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = "Pick a class",
-                StartPosition = FormStartPosition.CenterScreen
+                Width = 50,
+                Height = 50,
+                Top = 15,
+                Left = 700,
+                Value = _opts.WordsInStrings,
+                Increment = 1,
+                Maximum = 9,
+                Minimum = 0
             };
-            _mainForm.Controls.Add(_classNameCombo1Lbl);
 
-            _classNameCombo1.SelectedValueChanged += (sender, e) => { Redraw(); };
-            _wordsTxt.ValueChanged += (sender, e) => { ChangeWordsInStr(); };
-            _intLengthTxt.ValueChanged += (sender, e) => { ChangeIntLength(); };
+            var intLengthTxt = new NumericUpDown()
+            {
+                Width = 50,
+                Height = 50,
+                Top = 15,
+                Left = 550,
+                Value = _opts.IntLength,
+                Increment = 1,
+                Maximum = 9,
+                Minimum = 0
+            };
 
-            _mainForm.Controls.Add(_classNameCombo1Lbl);
-            _mainForm.Controls.Add(_intLengthLbl);
-            _mainForm.Controls.Add(_wordsLbl);
+            var wordsLbl = new Label() { Left = 615, Top = 17, AutoSize = true, Text = "Words in strings" };
+            var intLengthLbl = new Label() { Left = 480, Top = 17, AutoSize = true, Text = "Number size" };
 
-            _mainForm.Controls.Add(_wordsTxt);
-            _mainForm.Controls.Add(_intLengthTxt);
+            _mainForm.Controls.Add(intLengthLbl);
+            _mainForm.Controls.Add(wordsLbl);
+            _mainForm.Controls.Add(wordsTxt);
+            _mainForm.Controls.Add(intLengthTxt);
+
+            wordsTxt.ValueChanged += ChangeWordsInStr;
+            intLengthTxt.ValueChanged += ChangeIntLength;
+        }
+
+        protected void InitCombo1()
+        {
+            _classNameCombo1.AutoCompleteCustomSource = _dataSource;
+            _classNameCombo1.DataSource = _dataSource;
+
+            _mainForm.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
             _mainForm.Controls.Add(_classNameCombo1);
-            _mainForm.Controls.Add(_editor);
+            //_classNameCombo1.SelectedValueChanged += (sender, e) => { GenerateEditorTxt(); };
         }
 
-        protected void ChangeWordsInStr()
+        //protected void InitCombo2()
+        //{
+        //    _classNameCombo2.AutoCompleteCustomSource = _dataSource;
+        //    _classNameCombo2.DataSource = _dataSource;
+
+        //    //_mainForm.Controls.Add(new Label() { Left = 50, Top = 85, Text = "ClassName" });
+        //    _mainForm.Controls.Add(_classNameCombo2);
+        //    _classNameCombo2.SelectedValueChanged += (sender, e) => { GenerateEditorTxt(); };
+        //}
+
+        protected void ChangeWordsInStr(object sender, EventArgs e)
         {
-            _opts.WordsInStrings = _wordsTxt.Value;
-            Redraw();
+            var txtBox = sender as NumericUpDown;
+            if (txtBox == null) throw new Exception("Unable to change value");
+            _opts.WordsInStrings = txtBox.Value;
+            GenerateEditorTxt();
         }
 
-        protected void ChangeIntLength()
+        protected void ChangeIntLength(object sender, EventArgs e)
         {
-            _opts.IntLength = _intLengthTxt.Value;
-            Redraw();
+            var txtBox = sender as NumericUpDown;
+            if (txtBox == null) throw new Exception("Unable to change value");
+            _opts.IntLength = txtBox.Value;
+            GenerateEditorTxt();
         }
 
-        protected virtual void Redraw()
+        protected virtual void GenerateEditorTxt()
         {
             throw new Exception("Must override Redraw");
         }

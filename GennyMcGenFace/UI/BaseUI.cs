@@ -98,28 +98,17 @@ namespace GennyMcGenFace.UI
         {
             _classNameCombo1.AutoCompleteCustomSource = _dataSource;
             _classNameCombo1.DataSource = _dataSource;
-
             _mainForm.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
             _mainForm.Controls.Add(_classNameCombo1);
-            //_classNameCombo1.SelectedValueChanged += (sender, e) => { GenerateEditorTxt(); };
+            _classNameCombo1.SelectionChangeCommitted += GenerateEditorTxt;
         }
-
-        //protected void InitCombo2()
-        //{
-        //    _classNameCombo2.AutoCompleteCustomSource = _dataSource;
-        //    _classNameCombo2.DataSource = _dataSource;
-
-        //    //_mainForm.Controls.Add(new Label() { Left = 50, Top = 85, Text = "ClassName" });
-        //    _mainForm.Controls.Add(_classNameCombo2);
-        //    _classNameCombo2.SelectedValueChanged += (sender, e) => { GenerateEditorTxt(); };
-        //}
 
         protected void ChangeWordsInStr(object sender, EventArgs e)
         {
             var txtBox = sender as NumericUpDown;
             if (txtBox == null) throw new Exception("Unable to change value");
             _opts.WordsInStrings = txtBox.Value;
-            GenerateEditorTxt();
+            GenerateEditorTxt(null, null);
         }
 
         protected void ChangeIntLength(object sender, EventArgs e)
@@ -127,10 +116,10 @@ namespace GennyMcGenFace.UI
             var txtBox = sender as NumericUpDown;
             if (txtBox == null) throw new Exception("Unable to change value");
             _opts.IntLength = txtBox.Value;
-            GenerateEditorTxt();
+            GenerateEditorTxt(null, null);
         }
 
-        protected virtual void GenerateEditorTxt()
+        protected virtual void GenerateEditorTxt(object sender, EventArgs e)
         {
             throw new Exception("Must override Redraw");
         }

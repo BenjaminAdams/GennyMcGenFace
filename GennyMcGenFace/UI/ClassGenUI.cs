@@ -20,14 +20,15 @@ namespace GennyMcGenFace.UI
             _editor.Width = 700;
             _editor.Height = 600;
 
+            _mainForm.Shown += GenerateEditorTxt;
             _mainForm.ShowDialog();
+          
         }
 
-        protected override void GenerateEditorTxt()
+        protected override void GenerateEditorTxt(object sender, EventArgs e)
         {
-            var promptValue1 = "";
-            // var promptValue1 = _classNameCombo1.Text;
-            // if (string.IsNullOrWhiteSpace(promptValue1)) throw new Exception("Class name blank");
+            var promptValue1 = _classNameCombo1.Text;
+            if (string.IsNullOrWhiteSpace(promptValue1)) throw new Exception("Class name blank");
 
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) throw new Exception("Class not found");

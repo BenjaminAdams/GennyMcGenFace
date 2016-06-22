@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using StatusBar = GennyMcGenFace.UI.StatusBar;
 
-namespace GennyMcGenFace.Parser
+namespace GennyMcGenFace.Parsers
 {
     /// <summary>
     /// Get information about the current project the extension is installed on

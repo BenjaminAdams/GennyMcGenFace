@@ -4,7 +4,7 @@ using GennyMcGenFace.Models;
 using System;
 using System.Linq;
 
-namespace GennyMcGenFace.Parser
+namespace GennyMcGenFace.Parsers
 {
     public static class ClassGenerator
     {
@@ -118,7 +118,7 @@ namespace GennyMcGenFace.Parser
             }
         }
 
-        private static string GetParamValue(CodeTypeRef member, string paramName, int depth)
+        public static string GetParamValue(CodeTypeRef member, string paramName, int depth)
         {
             if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
             {

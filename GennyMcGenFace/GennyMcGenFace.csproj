@@ -130,12 +130,12 @@
   <ItemGroup>
     <Compile Include="Models\GenOptions.cs" />
     <Compile Include="Models\UnitTestParts.cs" />
-    <Compile Include="Parser\ClassGenerator.cs" />
+    <Compile Include="Parsers\ClassGenerator.cs" />
     <Compile Include="ComboListMatcher.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Guids.cs" />
-    <Compile Include="Parser\UnitTestGenerator.cs" />
+    <Compile Include="Parsers\UnitTestGenerator.cs" />
     <Compile Include="UI\BaseUI.cs" />
     <Compile Include="UI\ClassGenUI.cs" />
     <Compile Include="Resources.Designer.cs">
@@ -147,7 +147,7 @@
     <Compile Include="GennyMcGenFacePackage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PkgCmdID.cs" />
-    <Compile Include="Parser\CodeDiscoverer.cs" />
+    <Compile Include="Parsers\CodeDiscoverer.cs" />
     <Compile Include="Helpers\StaticRandom.cs" />
     <Compile Include="UI\MapperGenUI.cs" />
     <Compile Include="UI\StatusBar.cs" />

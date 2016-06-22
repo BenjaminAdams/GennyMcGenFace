@@ -1,6 +1,6 @@
 ﻿using EnvDTE;
 using EnvDTE80;
-using GennyMcGenFace.Parser;
+using GennyMcGenFace.Parsers;
 using GennyMcGenFace.UI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;

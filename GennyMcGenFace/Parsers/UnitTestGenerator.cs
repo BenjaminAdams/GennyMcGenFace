@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GennyMcGenFace.Parser
+namespace GennyMcGenFace.Parsers
 {
     public class UnitTestGenerator
     {
@@ -23,6 +23,14 @@ namespace GennyMcGenFace.Parser
                 Namespace = selectedClass.Namespace.FullName
             };
 
+            ParseFunctions(selectedClass, parts);
+
+            var outer = PutItAllTogether(parts);
+            return outer;
+        }
+
+        private static void ParseFunctions(CodeClass selectedClass, UnitTestParts parts)
+        {
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
                 if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
@@ -34,9 +42,6 @@ namespace GennyMcGenFace.Parser
                     GenerateOneTestForAFunction(member, parts);
                 }
             }
-
-            var outer = PutItAllTogether(parts);
-            return outer;
         }
 
         private static void GenerateConstructors(CodeFunction member, UnitTestParts parts)
@@ -64,12 +69,19 @@ namespace GennyMcGenFace.Parser
 
         private static void GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
         {
+            var str =
+
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
                 //if the param is a CodeClass we can create a input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
                     GenerateFunctionParam((CodeClass)param.Type.CodeType, parts);
+                }
+                else
+                {
+                    //add something to the test init?
+                    var valueOfParam = ClassGenerator.GetParamValue(param.Type, param.Name, 0);
                 }
             }
         }
@@ -79,12 +91,17 @@ namespace GennyMcGenFace.Parser
             if (parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return; //do not add a 2nd one
 
             var functionName = string.Format("Get{0}", param.Name);
-            var paramStr = string.Format("\r\nprivate static {0} {1}() {{\r\n", param.FullName, functionName);
-            paramStr += "return new ";
-            paramStr += ClassGenerator.GenerateClassStr(param, _opts).Replace("var obj = ", "");
-            paramStr += "};\r\n}\r\n";
-            parts.ParamInputs += paramStr;
+            //parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
             parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, GetFunctionName = functionName });
+
+            var inner = ClassGenerator.GenerateClassStr(param, _opts).Replace("var obj = ", "");
+
+            parts.ParamInputs += string.Format(@"
+        private static {0} {1}() {{
+            return new {2}
+            }};
+        }}
+", param.FullName, functionName, inner);
         }
 
         private static UnitTestParts GetUnitTestParts()

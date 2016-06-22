@@ -1,7 +1,7 @@
 ﻿using EnvDTE;
 using FastColoredTextBoxNS;
 using GennyMcGenFace.Models;
-using GennyMcGenFace.Parser;
+using GennyMcGenFace.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,6 +1,7 @@
 ﻿using EnvDTE;
 using GennyMcGenFace.Models;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,28 +9,6 @@ using System.Threading.Tasks;
 
 namespace GennyMcGenFace.Parser
 {
-    public class UnitTestParts
-    {
-        public UnitTestParts()
-        {
-            ParamsGenerated = new List<ParamsGenerated>();
-        }
-
-        public string MainClassName { get; set; }
-        public string ParamInputs { get; set; }
-        public string InitCode { get; set; }
-
-        public string PrivateClassesAtTop { get; set; }
-
-        public List<ParamsGenerated> ParamsGenerated { get; set; }
-    }
-
-    public class ParamsGenerated
-    {
-        public string FullName { get; set; }
-        public string PrivateFunctionName { get; set; }
-    }
-
     public class UnitTestGenerator
     {
         private static GenOptions _opts;
@@ -40,19 +19,50 @@ namespace GennyMcGenFace.Parser
 
             var parts = new UnitTestParts
             {
-                MainClassName = selectedClass.FullName
+                MainClassName = selectedClass.FullName,
+                Namespace = selectedClass.Namespace.FullName
             };
 
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
-                GenerateOneTestForAFunction(member, parts);
+                if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
+                {
+                    GenerateConstructors(member, parts);
+                }
+                else
+                {
+                    GenerateOneTestForAFunction(member, parts);
+                }
             }
 
             var outer = PutItAllTogether(parts);
             return outer;
         }
 
+        private static void GenerateConstructors(CodeFunction member, UnitTestParts parts)
+        {
+            GenerateFunctionParamValues(member, parts);
+        }
+
         private static void GenerateOneTestForAFunction(CodeFunction member, UnitTestParts parts)
+        {
+            GenerateFunctionParamValues(member, parts);
+
+            var str = string.Format(@"
+        [TestMethod]
+        public void {0}Test()
+        {{
+            var input = {1};
+            var res = _mainFunction.{0}(input);
+
+            Assert.IsNotNull(res);
+        }}
+", member.Name, parts.GetParamFunctionName(member.FullName));
+
+            parts.Tests += str;
+        }
+
+        private static void GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
         {
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
@@ -74,7 +84,7 @@ namespace GennyMcGenFace.Parser
             paramStr += ClassGenerator.GenerateClassStr(param, _opts).Replace("var obj = ", "");
             paramStr += "};\r\n}\r\n";
             parts.ParamInputs += paramStr;
-            parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, PrivateFunctionName = functionName });
+            parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, GetFunctionName = functionName });
         }
 
         private static UnitTestParts GetUnitTestParts()
@@ -87,32 +97,32 @@ namespace GennyMcGenFace.Parser
         private static string PutItAllTogether(UnitTestParts parts)
         {
             return string.Format(@"
-                    using Microsoft.VisualStudio.TestTools.UnitTesting;\r\n
-                    using NSubstitute;\r\n
-                    \r\n
-                    namespace Your.NameSpace\r\n
-                    {{\r\n
-                        [TestClass]\r\n
-                        public class {0}Tests\r\n
-                        {{\r\n
-                            {1}\r\n
-                            private IB2BResponseProcess _b2BResponseProcess;\r\n
-                            private B2BController _b2BController;\r\n
-                            \r\n
-                            [TestInitialize]\r\n
-                            public void Init()\r\n
-                            {{\r\n
-                                //var log = Substitute.For<ICustomLog>();
-                                //_b2BResponseProcess = Substitute.For<IB2BResponseProcess>();
-                                //b2BController = new B2BController(_b2BResponseProcess, log);
-                                {2}
-			                    \r\n
-                            }}
-		                    \r\n
-                            {3}\r\n
-	                    }}\r\n
-	                    \r\n
-                    }}", parts.MainClassName, parts.PrivateClassesAtTop, parts.InitCode, parts.ParamInputs);
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NSubstitute;
+
+namespace {0}
+{{
+    [TestClass]
+    public class {1}Tests
+    {{
+        {2}
+        private IB2BResponseProcess _b2BResponseProcess;
+        private B2BController _b2BController;
+
+        [TestInitialize]
+        public void Init()
+        {{
+            //var log = Substitute.For<ICustomLog>();
+            //_b2BResponseProcess = Substitute.For<IB2BResponseProcess>();
+            //b2BController = new B2BController(_b2BResponseProcess, log);
+            {3}
+        }}
+
+        {4}
+
+        {5}
+    }}
+}}", parts.Namespace, parts.MainClassName, parts.PrivateClassesAtTop, parts.InitCode, parts.Tests, parts.ParamInputs);
         }
     }
 }

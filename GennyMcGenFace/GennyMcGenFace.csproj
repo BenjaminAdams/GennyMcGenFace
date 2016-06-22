@@ -129,6 +129,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\GenOptions.cs" />
+    <Compile Include="Models\UnitTestParts.cs" />
     <Compile Include="Parser\ClassGenerator.cs" />
     <Compile Include="ComboListMatcher.cs">
       <SubType>Component</SubType>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EnvDTE;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,6 +34,7 @@ namespace GennyMcGenFace.Models
         public List<string> NameSpaces { get; set; }
 
         public List<ParamsGenerated> ParamsGenerated { get; set; }
+        public CodeClass SelectedClass { get; set; }
 
         public string GetParamFunctionName(string functionName)
         {

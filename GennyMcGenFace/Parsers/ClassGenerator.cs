@@ -6,30 +6,31 @@ using System.Linq;
 
 namespace GennyMcGenFace.Parsers
 {
-    public static class ClassGenerator
+    public class ClassGenerator
     {
         private static GenOptions _opts;
+        private UnitTestParts _parts;
 
-        public static string GenerateClassStr(CodeClass selectedClass, GenOptions opts, UnitTestParts parts, int depth = 0)
+        public ClassGenerator(UnitTestParts parts)
+        {
+            _parts = parts ?? new UnitTestParts();
+        }
+
+        public string GenerateClassStr(CodeClass selectedClass, GenOptions opts, int depth = 0)
         {
             _opts = opts;
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
-            str += IterateMembers(selectedClass.Members, depth, parts);
+            str += IterateMembers(selectedClass.Members, depth);
             str += GetSpaces(depth) + "};";
             return str;
         }
 
-        private static string IterateMembers(CodeElements members, int depth, UnitTestParts parts)
+        private string IterateMembers(CodeElements members, int depth)
         {
             depth++;
             var str = "";
             foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
-                if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
-                {
-                    parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
-                }
-
                 try
                 {
                     if (CodeDiscoverer.IsValidPublicProperty((CodeElement)member) == false) continue;
@@ -45,11 +46,26 @@ namespace GennyMcGenFace.Parsers
             return str;
         }
 
-        private static string GetParam(CodeTypeRef member, string paramName, int depth)
+        private void AddNameSpace(CodeTypeRef member)
+        {
+            try
+            {
+                if (member != null && member.CodeType != null && member.CodeType.Namespace != null)
+                {
+                    _parts.NameSpaces.AddIfNotExists(member.CodeType.Namespace.FullName);
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+
+        private string GetParam(CodeTypeRef member, string paramName, int depth)
         {
             try
             {
                 member = RemoveNullable(member);
+                AddNameSpace(member);
 
                 if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
                 {
@@ -123,7 +139,7 @@ namespace GennyMcGenFace.Parsers
             }
         }
 
-        public static string GetParamValue(CodeTypeRef member, string paramName, int depth)
+        public string GetParamValue(CodeTypeRef member, string paramName, int depth)
         {
             if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
             {
@@ -195,7 +211,7 @@ namespace GennyMcGenFace.Parsers
         }
 
         //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object
-        private static string ParseObjects(CodeTypeRef member, string paramName, int depth)
+        private string ParseObjects(CodeTypeRef member, string paramName, int depth)
         {
             if (member.CodeType.Name == "List" || member.CodeType.Name == "ICollection" || member.CodeType.Name == "IList" || member.CodeType.Name == "IEnumerable")
             {
@@ -210,7 +226,7 @@ namespace GennyMcGenFace.Parsers
         }
 
         //list logic
-        private static string GetListParam(CodeTypeRef member, string paramName, int depth)
+        private string GetListParam(CodeTypeRef member, string paramName, int depth)
         {
             var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
             if (baseType == null) return string.Empty;
@@ -231,7 +247,7 @@ namespace GennyMcGenFace.Parsers
         }
 
         //array logic
-        private static string GetArrayParam(CodeTypeRef member, string paramName, int depth)
+        private string GetArrayParam(CodeTypeRef member, string paramName, int depth)
         {
             var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromArray(member.AsString));
             if (baseType == null) return string.Empty;
@@ -305,7 +321,7 @@ namespace GennyMcGenFace.Parsers
             var spaces = "";
             for (var i = 0; i < depth; i++)
             {
-                spaces += "    ";
+                spaces += "     ";
             }
 
             return spaces;

@@ -5,6 +5,7 @@ using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,76 +14,87 @@ namespace GennyMcGenFace.Parsers
     public class UnitTestGenerator
     {
         private static GenOptions _opts;
+        private UnitTestParts _parts;
 
-        public static string Gen(CodeClass selectedClass, GenOptions opts)
+        public UnitTestGenerator(CodeClass selectedClass)
+        {
+            _parts = new UnitTestParts
+            {
+                MainClassName = selectedClass.FullName,
+                MainNamespace = selectedClass.Namespace.FullName,
+                SelectedClass = selectedClass,
+                NameSpaces = new List<string>() { selectedClass.Namespace.FullName }
+            };
+        }
+
+        public string Gen(CodeClass selectedClass, GenOptions opts)
         {
             _opts = opts;
 
-            var parts = new UnitTestParts
-            {
-                MainClassName = selectedClass.FullName,
-                MainNamespace = selectedClass.Namespace.FullName
-            };
+            ParseFunctions(selectedClass);
+            GenInit(selectedClass);
 
-            ParseFunctions(selectedClass, parts);
-            GenInit(selectedClass, parts);
-
-            var outer = PutItAllTogether(parts);
+            var outer = PutItAllTogether();
             return outer;
         }
 
-        private static void GenInit(CodeClass selectedClass, UnitTestParts parts)
+        private static void GenInit(CodeClass selectedClass)
         {
         }
 
-        private static void ParseFunctions(CodeClass selectedClass, UnitTestParts parts)
+        private void ParseFunctions(CodeClass selectedClass)
         {
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
                 if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                 {
-                    parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+                    _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
                 }
 
                 if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
                 {
-                    GenerateConstructor(member, parts);
+                    GenerateConstructor(member, _parts);
                 }
                 else
                 {
-                    GenerateOneTestForAFunction(member, parts);
+                    GenerateOneTestForAFunction(member, _parts);
                 }
             }
         }
 
-        private static void GenerateConstructor(CodeFunction member, UnitTestParts parts)
+        private void GenerateConstructor(CodeFunction member, UnitTestParts parts)
         {
-            parts.HasConstructor = true;
+            _parts.HasConstructor = true;
             var paramsStr = GenerateFunctionParamValues(member, parts);
 
-            //parts.PrivateClassesAtTop.AddIfNotExists("testTarget");
-            parts.InitCode += string.Format("            _testTarget = new {0}({1});\r\n", member.FullName, paramsStr);
+            _parts.InitCode += string.Format("            _testTarget = new {0}({1});\r\n", member.Name, paramsStr);
         }
 
-        private static void GenerateOneTestForAFunction(CodeFunction member, UnitTestParts parts)
+        private void GenerateOneTestForAFunction(CodeFunction member, UnitTestParts parts)
         {
             var paramsStr = GenerateFunctionParamValues(member, parts);
+
+            var returnsValCode = "var res = ";
+            var afterFunction = "Assert.IsNotNull(res);\r\n";
+            if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
+            {
+                returnsValCode = "";
+                afterFunction = "";
+            }
 
             var str = string.Format(@"
         [TestMethod]
         public void {0}Test()
         {{
             {1}
-            var res = _testTarget.{0}({2});
-            Assert.IsNotNull(res);
-            //Todo: Add more Asserts
-        }}
-", member.Name, GetInputsBeforeFunctionParams(member, parts), paramsStr);
+            {2}_testTarget.{0}({3});
+            {4}
+        }}", member.Name, GetInputsBeforeFunctionParams(member, parts), returnsValCode, paramsStr, afterFunction);
 
-            parts.Tests += str;
+            _parts.Tests += str;
         }
 
-        private static string GetInputsBeforeFunctionParams(CodeFunction member, UnitTestParts parts)
+        private string GetInputsBeforeFunctionParams(CodeFunction member, UnitTestParts parts)
         {
             if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
             var strInputs = "";
@@ -91,14 +103,14 @@ namespace GennyMcGenFace.Parsers
                 //get an input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
-                    strInputs += string.Format("var input{0} = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts));
+                    strInputs += string.Format("var input{0} = {1}();\r\n", param.Name.FirstCharacterToUpper(), GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts));
                 }
             }
 
             return strInputs;
         }
 
-        private static string GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
+        private string GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
         {
             if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
             var paramsStr = "";
@@ -107,7 +119,7 @@ namespace GennyMcGenFace.Parsers
             {
                 if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                 {
-                    parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+                    _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
                 }
 
                 if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
@@ -123,8 +135,8 @@ namespace GennyMcGenFace.Parsers
                 }
                 else
                 {
-                    //add something to the test init?
-                    paramsStr += ClassGenerator.GetParamValue(param.Type, param.Name, 0) + ",";
+                    var genner = new ClassGenerator(_parts);
+                    paramsStr += genner.GetParamValue(param.Type, param.Name, 0) + ",";
                 }
             }
 
@@ -132,31 +144,33 @@ namespace GennyMcGenFace.Parsers
             return paramsStr;
         }
 
-        private static string GenerateInterface(CodeParameter param, UnitTestParts parts)
+        private string GenerateInterface(CodeParameter param, UnitTestParts parts)
         {
             var interf = (CodeInterface)param.Type.CodeType;
 
-            parts.PrivateClassesAtTop.AddIfNotExists(interf.Name);
+            _parts.PrivateClassesAtTop.AddIfNotExists(interf.Name);
+            _parts.HasInterfaces = true;
             return GenPrivateClassName(interf.Name);
         }
 
-        private static string GenerateFunctionParamForClassInput(CodeClass param, UnitTestParts parts)
+        private string GenerateFunctionParamForClassInput(CodeClass param, UnitTestParts parts)
         {
             var functionName = string.Format("Get{0}", param.Name);
-            if (parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return functionName; //do not add a 2nd one
+            if (_parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return functionName; //do not add a 2nd one
 
-            //parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
-            parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, GetFunctionName = functionName });
+            //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
+            _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, GetFunctionName = functionName });
 
-            var inner = ClassGenerator.GenerateClassStr(param, _opts, 3).Replace("var obj = ", "");
+            var genner = new ClassGenerator(_parts);
+            var inner = genner.GenerateClassStr(param, _opts, 2).Replace("var obj = ", "");
 
             var gen = string.Format(@"
         private static {0} {1}() {{
-            return new {2}
+            return {2}
         }}
         ", param.FullName, functionName, inner);
 
-            parts.ParamInputs += gen;
+            _parts.ParamInputs += gen;
             return functionName;
         }
 
@@ -165,42 +179,42 @@ namespace GennyMcGenFace.Parsers
             return "_" + className.FirstCharacterToLower();
         }
 
-        private static string GenPrivateClassesAtTop(UnitTestParts parts)
+        private string GenPrivateClassesAtTop()
         {
             var frmtStr = "        private {0} {1};\r\n";
             var str = string.Empty;
-            foreach (var className in parts.PrivateClassesAtTop)
+            foreach (var className in _parts.PrivateClassesAtTop)
             {
                 var privClassName = GenPrivateClassName(className);
                 str += string.Format(frmtStr, className, privClassName);
-                parts.InitCode = string.Format("            {0} = Substitute.For<{1}>();\r\n", privClassName, className) + parts.InitCode;
+                _parts.InitCode = string.Format("            {0} = Substitute.For<{1}>();\r\n", privClassName, className) + _parts.InitCode;
             }
 
-            if (parts.HasConstructor)
+            if (_parts.HasConstructor)
             {
-                str += string.Format(frmtStr, parts.MainClassName, "_testTarget");
+                str += string.Format(frmtStr, _parts.SelectedClass.Name, "_testTarget");
             }
 
             return str;
         }
 
-        private static string GenNameSpaces(UnitTestParts parts)
+        private string GenNameSpaces()
         {
             var str = string.Empty;
-            foreach (var ns in parts.NameSpaces)
+            foreach (var ns in _parts.NameSpaces)
             {
                 str += string.Format("using {0};\r\n", ns);
             }
 
-            if (parts.HasInterfaces)
+            if (_parts.HasInterfaces)
             {
-                str += "using NSubstitute;";
+                str += "using NSubstitute;\r\n";
             }
 
             return str;
         }
 
-        private static string PutItAllTogether(UnitTestParts parts)
+        private string PutItAllTogether()
         {
             return string.Format(@"using Microsoft.VisualStudio.TestTools.UnitTesting;
 {0}
@@ -215,12 +229,10 @@ namespace {1}
         {{
 {4}
         }}
-
 {5}
-
-        {6}
+{6}
     }}
-}}", GenNameSpaces(parts), parts.MainNamespace, parts.MainClassName.Replace(".", ""), GenPrivateClassesAtTop(parts), parts.InitCode, parts.Tests, parts.ParamInputs);
+}}", GenNameSpaces(), _parts.MainNamespace, _parts.MainClassName.Replace(".", ""), GenPrivateClassesAtTop(), _parts.InitCode, _parts.Tests, _parts.ParamInputs);
         }
     }
 }

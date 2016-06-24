@@ -34,9 +34,8 @@ namespace GennyMcGenFace.UI
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) throw new Exception("Class not found");
 
-            var generatedCode = UnitTestGenerator.Gen(selectedClass, _opts);
-
-            _editor.Text = generatedCode;
+            var genner = new UnitTestGenerator(selectedClass);
+            _editor.Text = genner.Gen(selectedClass, _opts);
         }
     }
 }

@@ -10,12 +10,12 @@ namespace GennyMcGenFace.Parsers
     {
         private static GenOptions _opts;
 
-        public static string GenerateClassStr(CodeClass selectedClass, GenOptions opts)
+        public static string GenerateClassStr(CodeClass selectedClass, GenOptions opts, int depth = 0)
         {
             _opts = opts;
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
-            str += IterateMembers(selectedClass.Members, 0);
-            str += "};";
+            str += IterateMembers(selectedClass.Members, depth);
+            str += GetSpaces(depth) + "};";
             return str;
         }
 

@@ -51,70 +51,85 @@ namespace GennyMcGenFace.Parsers
 
         private static void GenerateOneTestForAFunction(CodeFunction member, UnitTestParts parts)
         {
-            GenerateFunctionParamValues(member, parts);
+            var paramsStr = GenerateFunctionParamValues(member, parts);
 
             var str = string.Format(@"
         [TestMethod]
         public void {0}Test()
         {{
-            var input = {1};
-            var res = _mainFunction.{0}(input);
+            {1}
+            var res = _mainFunction.{0}({2});
 
             Assert.IsNotNull(res);
         }}
-", member.Name, parts.GetParamFunctionName(member.FullName));
+", member.Name, GetInputsBeforeFunctionParams(member, parts), paramsStr);
 
             parts.Tests += str;
         }
 
-        private static void GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
+        private static string GetInputsBeforeFunctionParams(CodeFunction member, UnitTestParts parts)
         {
-            var str =
+            if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
+            var strInputs = "";
+            foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
+            {
+                //get an input object for it
+                if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                {
+                    strInputs += string.Format("var input{0} = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts));
+                }
+            }
+
+            return strInputs;
+        }
+
+        private static string GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
+        {
+            if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
+            var paramsStr = "";
 
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
-                //if the param is a CodeClass we can create a input object for it
+                //if the param is a CodeClass we can create an input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
-                    GenerateFunctionParam((CodeClass)param.Type.CodeType, parts);
+                    GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts);
+                    paramsStr += string.Format("input{0},", param.Name);
                 }
                 else
                 {
                     //add something to the test init?
-                    var valueOfParam = ClassGenerator.GetParamValue(param.Type, param.Name, 0);
+                    paramsStr += ClassGenerator.GetParamValue(param.Type, param.Name, 0) + ",";
                 }
             }
+
+            paramsStr = paramsStr.TrimEnd(',');
+            return paramsStr;
         }
 
-        private static void GenerateFunctionParam(CodeClass param, UnitTestParts parts)
+        private static string GenerateFunctionParamForClassInput(CodeClass param, UnitTestParts parts)
         {
-            if (parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return; //do not add a 2nd one
-
             var functionName = string.Format("Get{0}", param.Name);
+            if (parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return functionName; //do not add a 2nd one
+
             //parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
             parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, GetFunctionName = functionName });
 
-            var inner = ClassGenerator.GenerateClassStr(param, _opts).Replace("var obj = ", "");
+            var inner = ClassGenerator.GenerateClassStr(param, _opts, 3).Replace("var obj = ", "");
 
-            parts.ParamInputs += string.Format(@"
+            var gen = string.Format(@"
         private static {0} {1}() {{
             return new {2}
-            }};
         }}
-", param.FullName, functionName, inner);
-        }
+        ", param.FullName, functionName, inner);
 
-        private static UnitTestParts GetUnitTestParts()
-        {
-            return new UnitTestParts()
-            {
-            };
+            parts.ParamInputs += gen;
+            return functionName;
         }
 
         private static string PutItAllTogether(UnitTestParts parts)
         {
-            return string.Format(@"
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+            return string.Format(@"using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 
 namespace {0}
@@ -135,7 +150,7 @@ namespace {0}
             {3}
         }}
 
-        {4}
+{4}
 
         {5}
     }}

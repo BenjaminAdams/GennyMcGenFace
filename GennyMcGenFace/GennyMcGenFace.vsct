@@ -74,13 +74,13 @@
         </Strings>
       </Button>
 
-      <Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenMapperTest" priority="0x0101" type="Button">
+      <!--<Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenMapperTest" priority="0x0101" type="Button">
         <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />
         <Icon guid="mcFaceGuid" id="mcFaceImg" />
         <Strings>
           <ButtonText>Generate Mapper Unit Test</ButtonText>
         </Strings>
-      </Button>
+      </Button>-->
 
       <Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenUnitTest" priority="0x0101" type="Button">
         <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />

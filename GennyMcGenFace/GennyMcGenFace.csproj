@@ -128,6 +128,7 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="Models\GenOptions.cs" />
     <Compile Include="Models\UnitTestParts.cs" />
     <Compile Include="Parsers\ClassGenerator.cs" />

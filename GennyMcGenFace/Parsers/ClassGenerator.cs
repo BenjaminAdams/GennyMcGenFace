@@ -10,21 +10,26 @@ namespace GennyMcGenFace.Parsers
     {
         private static GenOptions _opts;
 
-        public static string GenerateClassStr(CodeClass selectedClass, GenOptions opts, int depth = 0)
+        public static string GenerateClassStr(CodeClass selectedClass, GenOptions opts, UnitTestParts parts, int depth = 0)
         {
             _opts = opts;
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
-            str += IterateMembers(selectedClass.Members, depth);
+            str += IterateMembers(selectedClass.Members, depth, parts);
             str += GetSpaces(depth) + "};";
             return str;
         }
 
-        private static string IterateMembers(CodeElements members, int depth)
+        private static string IterateMembers(CodeElements members, int depth, UnitTestParts parts)
         {
             depth++;
             var str = "";
             foreach (CodeProperty member in members.OfType<CodeProperty>())
             {
+                if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
+                {
+                    parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+                }
+
                 try
                 {
                     if (CodeDiscoverer.IsValidPublicProperty((CodeElement)member) == false) continue;

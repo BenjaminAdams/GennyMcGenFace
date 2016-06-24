@@ -14,16 +14,23 @@ namespace GennyMcGenFace.Models
             Tests = "";
             ParamInputs = "";
             InitCode = "";
-            PrivateClassesAtTop = "";
+            PrivateClassesAtTop = new List<string>();
+            NameSpaces = new List<string>();
+            HasConstructor = false;
+            HasInterfaces = false;
         }
 
         public string MainClassName { get; set; }
-        public string Namespace { get; set; }
+        public string MainNamespace { get; set; }
         public string ParamInputs { get; set; }
         public string InitCode { get; set; }
         public string Tests { get; set; }
 
-        public string PrivateClassesAtTop { get; set; }
+        public bool HasConstructor { get; set; }
+        public bool HasInterfaces { get; set; }
+
+        public List<string> PrivateClassesAtTop { get; set; }
+        public List<string> NameSpaces { get; set; }
 
         public List<ParamsGenerated> ParamsGenerated { get; set; }
 

@@ -103,7 +103,7 @@ namespace GennyMcGenFace.Parsers
                 //get an input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
-                    strInputs += string.Format("var input{0} = {1}();\r\n", param.Name.FirstCharacterToUpper(), GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts));
+                    strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts));
                 }
             }
 
@@ -131,7 +131,7 @@ namespace GennyMcGenFace.Parsers
                 {
                     //if the param is a CodeClass we can create an input object for it
                     GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts);
-                    paramsStr += string.Format("input{0},", param.Name);
+                    paramsStr += string.Format("{0}Input,", param.Name);
                 }
                 else
                 {
@@ -232,7 +232,7 @@ namespace {1}
 {5}
 {6}
     }}
-}}", GenNameSpaces(), _parts.MainNamespace, _parts.MainClassName.Replace(".", ""), GenPrivateClassesAtTop(), _parts.InitCode, _parts.Tests, _parts.ParamInputs);
+}}", GenNameSpaces(), _parts.MainNamespace, _parts.MainClassName.Replace(".", "_"), GenPrivateClassesAtTop(), _parts.InitCode, _parts.Tests, _parts.ParamInputs);
         }
     }
 }

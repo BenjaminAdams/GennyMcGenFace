@@ -18,7 +18,7 @@ namespace GennyMcGenFace.Helpers
 
         public static string FirstCharacterToUpper(this string str)
         {
-            if (String.IsNullOrEmpty(str) || Char.IsLower(str, 0))
+            if (String.IsNullOrEmpty(str) || Char.IsUpper(str, 0))
                 return str;
 
             return Char.ToUpperInvariant(str[0]) + str.Substring(1);

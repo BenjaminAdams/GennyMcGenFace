@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EnvDTE;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,6 +29,13 @@ namespace GennyMcGenFace.Helpers
         {
             if (lst.Contains(str) == true) return;
             lst.Add(str);
+        }
+
+        public static void AddIfNotExists(this List<CodeInterface> lst, CodeInterface codeInterface)
+        {
+            if (codeInterface == null || codeInterface.Name == null || lst == null) return;
+            if (lst.Any(x => x.FullName == codeInterface.FullName)) return;
+            lst.Add(codeInterface);
         }
     }
 }

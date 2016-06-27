@@ -32,14 +32,8 @@ namespace GennyMcGenFace.Parsers
             _opts = opts;
 
             ParseFunctions(selectedClass);
-            GenInit(selectedClass);
 
-            var outer = PutItAllTogether();
-            return outer;
-        }
-
-        private static void GenInit(CodeClass selectedClass)
-        {
+            return PutItAllTogether();
         }
 
         private void ParseFunctions(CodeClass selectedClass)
@@ -53,48 +47,24 @@ namespace GennyMcGenFace.Parsers
 
                 if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
                 {
-                    GenerateConstructor(member, _parts);
+                    GenerateConstructor(member);
                 }
                 else
                 {
-                    GenerateOneTestForAFunction(member, _parts);
+                    GenerateOneTestForAFunction(member);
                 }
             }
         }
 
-        private void GenerateConstructor(CodeFunction member, UnitTestParts parts)
+        private void GenerateConstructor(CodeFunction member)
         {
             _parts.HasConstructor = true;
-            var paramsStr = GenerateFunctionParamValues(member, parts);
+            var paramsStr = GenerateFunctionParamValues(member);
 
             _parts.InitCode += string.Format("            _testTarget = new {0}({1});\r\n", member.Name, paramsStr);
         }
 
-        private void GenerateOneTestForAFunction(CodeFunction member, UnitTestParts parts)
-        {
-            var paramsStr = GenerateFunctionParamValues(member, parts);
-
-            var returnsValCode = "var res = ";
-            var afterFunction = "Assert.IsNotNull(res);\r\n";
-            if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
-            {
-                returnsValCode = "";
-                afterFunction = "";
-            }
-
-            var str = string.Format(@"
-        [TestMethod]
-        public void {0}Test()
-        {{
-            {1}
-            {2}_testTarget.{0}({3});
-            {4}
-        }}", member.Name, GetInputsBeforeFunctionParams(member, parts), returnsValCode, paramsStr, afterFunction);
-
-            _parts.Tests += str;
-        }
-
-        private string GetInputsBeforeFunctionParams(CodeFunction member, UnitTestParts parts)
+        private string GetInputsBeforeFunctionParams(CodeFunction member)
         {
             if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
             var strInputs = "";
@@ -103,14 +73,14 @@ namespace GennyMcGenFace.Parsers
                 //get an input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
-                    strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts));
+                    strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType));
                 }
             }
 
             return strInputs;
         }
 
-        private string GenerateFunctionParamValues(CodeFunction member, UnitTestParts parts)
+        private string GenerateFunctionParamValues(CodeFunction member)
         {
             if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
             var paramsStr = "";
@@ -125,35 +95,36 @@ namespace GennyMcGenFace.Parsers
                 if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
                 {
                     //generate interface
-                    paramsStr += GenerateInterface(param, parts) + ",";
+                    paramsStr += GenerateInterface(param) + ", ";
                 }
                 else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
                     //if the param is a CodeClass we can create an input object for it
-                    GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType, parts);
-                    paramsStr += string.Format("{0}Input,", param.Name);
+                    GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType);
+                    paramsStr += string.Format("{0}Input, ", param.Name);
                 }
                 else
                 {
                     var genner = new ClassGenerator(_parts);
-                    paramsStr += genner.GetParamValue(param.Type, param.Name, 0) + ",";
+                    paramsStr += genner.GetParamValue(param.Type, param.Name, 0) + ", ";
                 }
             }
 
-            paramsStr = paramsStr.TrimEnd(',');
+            paramsStr = paramsStr.Trim().TrimEnd(',');
             return paramsStr;
         }
 
-        private string GenerateInterface(CodeParameter param, UnitTestParts parts)
+        private string GenerateInterface(CodeParameter param)
         {
-            var interf = (CodeInterface)param.Type.CodeType;
+            var codeInterface = (CodeInterface)param.Type.CodeType;
 
-            _parts.PrivateClassesAtTop.AddIfNotExists(interf.Name);
-            _parts.HasInterfaces = true;
-            return GenPrivateClassName(interf.Name);
+            _parts.PrivateClassesAtTop.AddIfNotExists(codeInterface.Name);
+            _parts.Interfaces.AddIfNotExists(codeInterface);
+
+            return GenPrivateClassNameAtTop(codeInterface.Name);
         }
 
-        private string GenerateFunctionParamForClassInput(CodeClass param, UnitTestParts parts)
+        private string GenerateFunctionParamForClassInput(CodeClass param)
         {
             var functionName = string.Format("Get{0}", param.Name);
             if (_parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return functionName; //do not add a 2nd one
@@ -174,20 +145,20 @@ namespace GennyMcGenFace.Parsers
             return functionName;
         }
 
-        private static string GenPrivateClassName(string className)
+        private static string GenPrivateClassNameAtTop(string className)
         {
             return "_" + className.FirstCharacterToLower();
         }
 
         private string GenPrivateClassesAtTop()
         {
-            var frmtStr = "        private {0} {1};\r\n";
+            var frmtStr = Spacing.Get(2) + "private {0} {1};\r\n";
             var str = string.Empty;
             foreach (var className in _parts.PrivateClassesAtTop)
             {
-                var privClassName = GenPrivateClassName(className);
+                var privClassName = GenPrivateClassNameAtTop(className);
                 str += string.Format(frmtStr, className, privClassName);
-                _parts.InitCode = string.Format("            {0} = Substitute.For<{1}>();\r\n", privClassName, className) + _parts.InitCode;
+                _parts.InitCode = string.Format(Spacing.Get(2) + "{0} = Substitute.For<{1}>();\r\n", privClassName, className) + _parts.InitCode;
             }
 
             if (_parts.HasConstructor)
@@ -206,12 +177,95 @@ namespace GennyMcGenFace.Parsers
                 str += string.Format("using {0};\r\n", ns);
             }
 
-            if (_parts.HasInterfaces)
+            if (_parts.Interfaces.Any())
             {
                 str += "using NSubstitute;\r\n";
             }
 
             return str;
+        }
+
+        private string GenInterfaceMocking()
+        {
+            //goal
+            //async   _someClass.SomeFunction(Arg.Any<Guid>()).Returns(Task.FromResult(SomeClass));
+            //reg     _someClass.SomeFunction(Arg.Any<Guid>()).Returns(SomeClass);
+            var str = string.Empty;
+            foreach (CodeInterface face in _parts.Interfaces)   //foreach interface found in our test class
+            {
+                if (face.Kind == vsCMElement.vsCMElementInterface)
+                {
+                    foreach (CodeFunction member in face.Members.OfType<CodeFunction>()) //foreach function in interface
+                    {
+                        var returnType = string.Empty;
+                        if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
+                        {
+                            continue; //no need to mock return type for Void functions
+                        }
+
+                        if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                        {
+                            GenerateFunctionParamForClassInput((CodeClass)member.Type.CodeType); //make sure we have created this type so we can return it
+                            returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
+                        }
+                        else
+                        {
+                            var genner = new ClassGenerator(_parts);
+                            returnType = genner.GetParamValue(member.Type, "", 0);
+                        }
+
+                        str += string.Format("{0}{1}.{2}({3})\r\n{4}.Returns({5});\r\n",
+                                            Spacing.Get(2), GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(face), Spacing.Get(4), returnType);
+                    }
+                }
+            }
+
+            return str;
+        }
+
+        /// <summary>
+        /// Returns a string contains the args needed for nsub to mock the return obj
+        /// </summary>
+        /// <param name="face"></param>
+        /// <returns></returns>
+        private string GetInterfaceArgs(CodeInterface face)
+        {
+            //goal Arg.Any<Guid>(), Arg.Any<string>()
+            var paramsStr = string.Empty;
+
+            foreach (CodeFunction member in face.Members.OfType<CodeFunction>())
+            {
+                foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
+                {
+                    paramsStr += string.Format("Arg.Any<{0}>(), ", param.Type.AsFullName.RemoveSystemFromStr());
+                }
+            }
+            paramsStr = paramsStr.TrimEnd().TrimEnd(',');
+            return paramsStr;
+        }
+
+        private void GenerateOneTestForAFunction(CodeFunction member)
+        {
+            var paramsStr = GenerateFunctionParamValues(member);
+
+            var returnsValCode = "var res = ";
+            var afterFunction = "Assert.IsNotNull(res);\r\n";
+            if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
+            {
+                returnsValCode = "";
+                afterFunction = "";
+            }
+
+            var str = string.Format(@"
+        [TestMethod]
+        public void {0}Test()
+        {{
+            {1}
+            {2}_testTarget.{0}({3});
+            {4}
+        }}", member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction);
+
+            _parts.Tests += str;
         }
 
         private string PutItAllTogether()
@@ -228,11 +282,12 @@ namespace {1}
         public void Init()
         {{
 {4}
-        }}
 {5}
+        }}
 {6}
+{7}
     }}
-}}", GenNameSpaces(), _parts.MainNamespace, _parts.MainClassName.Replace(".", "_"), GenPrivateClassesAtTop(), _parts.InitCode, _parts.Tests, _parts.ParamInputs);
+}}", GenNameSpaces(), _parts.MainNamespace, _parts.MainClassName.Replace(".", "_"), GenPrivateClassesAtTop(), _parts.InitCode, GenInterfaceMocking(), _parts.Tests, _parts.ParamInputs);
         }
     }
 }

@@ -21,7 +21,7 @@ namespace GennyMcGenFace.Parsers
             _opts = opts;
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
             str += IterateMembers(selectedClass.Members, depth);
-            str += GetSpaces(depth) + "};";
+            str += Spacing.Get(depth) + "};";
             return str;
         }
 
@@ -70,17 +70,17 @@ namespace GennyMcGenFace.Parsers
                 if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
                 {
                     //DateTime
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.Guid")
                 {
                     //Guid
-                    return string.Format("{0}{1} = new Guid(\"{2}\"),\r\n", GetSpaces(depth), paramName, Guid.NewGuid());
+                    return string.Format("{0}{1} = new Guid(\"{2}\"),\r\n", Spacing.Get(depth), paramName, Guid.NewGuid());
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.CodeType != null && member.CodeType.Members != null && member.CodeType.Members.Count > 0 && member.CodeType.Kind == vsCMElement.vsCMElementEnum)
                 {
                     //Enums
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
@@ -90,27 +90,27 @@ namespace GennyMcGenFace.Parsers
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
                 {
                     //string
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
                 {
                     //char
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
                 {
                     //bool
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
                 {
                     //numbers (except short)
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
                 {
                     //short
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
                 {
@@ -120,12 +120,12 @@ namespace GennyMcGenFace.Parsers
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
                 {
                     //byte
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
                 {
                     //object
-                    return string.Format("{0}{1} = {2},\r\n", GetSpaces(depth), paramName, GetParamValue(member, paramName, depth));
+                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
                 }
                 else
                 {
@@ -135,7 +135,7 @@ namespace GennyMcGenFace.Parsers
             }
             catch (Exception ex)
             {
-                return string.Format("{0}//{1} = failed\r\n", GetSpaces(depth), paramName);
+                return string.Format("{0}//{1} = failed\r\n", Spacing.Get(depth), paramName);
             }
         }
 
@@ -221,7 +221,7 @@ namespace GennyMcGenFace.Parsers
             else
             {
                 //plain object
-                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, member.AsFullName, IterateMembers(member.CodeType.Members, depth));
+                return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", Spacing.Get(depth), paramName, member.AsFullName, IterateMembers(member.CodeType.Members, depth));
             }
         }
 
@@ -234,15 +234,15 @@ namespace GennyMcGenFace.Parsers
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //typed List
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
-                return string.Format("{0}{1} = new List<{2}>() {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, baseType.AsFullName, objAsStr);
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                return string.Format("{0}{1} = new List<{2}>() {{\r\n{3}{0}}},\r\n", Spacing.Get(depth), paramName, baseType.AsFullName, objAsStr);
             }
             else
             {
                 //generic list, such as string/int
                 // var ListString = new List<System.String>() { "yay" };
                 // var ListAry = new String[] { "yay" };
-                return string.Format("{0}{1} = new List<{2}>() {{ {3} }},\r\n", GetSpaces(depth), paramName, RemoveSystemFromStr(baseType.AsFullName), GetParamValue(baseType, "", depth + 1));
+                return string.Format("{0}{1} = new List<{2}>() {{ {3} }},\r\n", Spacing.Get(depth), paramName, baseType.AsFullName.RemoveSystemFromStr(), GetParamValue(baseType, "", depth + 1));
             }
         }
 
@@ -252,20 +252,20 @@ namespace GennyMcGenFace.Parsers
             var baseType = ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromArray(member.AsString));
             if (baseType == null) return string.Empty;
 
-            var typeFullName = string.Format("{0}[]", RemoveSystemFromStr(baseType.AsFullName));
+            var typeFullName = string.Format("{0}[]", baseType.AsFullName.RemoveSystemFromStr());
 
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //typed Array
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", GetSpaces(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
-                return string.Format("{0}{1} = new {2} {{\r\n{3}{0}}},\r\n", GetSpaces(depth), paramName, typeFullName, objAsStr);
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType.Members, depth + 1));
+                return string.Format("{0}{1} = new {2} {{\r\n{3}{0}}},\r\n", Spacing.Get(depth), paramName, typeFullName, objAsStr);
             }
             else
             {
                 //generic array, such as string/int
                 // var ListString = new List<System.String>() { "yay" };
                 // var ListAry = new String[] { "yay" };
-                return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", GetSpaces(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
+                return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", Spacing.Get(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
             }
         }
 
@@ -304,27 +304,6 @@ namespace GennyMcGenFace.Parsers
         private static string GetBaseTypeFromArray(string fullName)
         {
             return fullName.Replace("[]", "");
-        }
-
-        private static string RemoveSystemFromStr(string str)
-        {
-            if (str.StartsWith("System."))
-            {
-                str = str.Replace("System.", "");
-            }
-
-            return str;
-        }
-
-        private static string GetSpaces(int depth)
-        {
-            var spaces = "";
-            for (var i = 0; i < depth; i++)
-            {
-                spaces += "     ";
-            }
-
-            return spaces;
         }
     }
 }

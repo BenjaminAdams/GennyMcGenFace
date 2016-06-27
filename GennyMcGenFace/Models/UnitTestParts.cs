@@ -17,8 +17,8 @@ namespace GennyMcGenFace.Models
             InitCode = "";
             PrivateClassesAtTop = new List<string>();
             NameSpaces = new List<string>();
+            Interfaces = new List<CodeInterface>();
             HasConstructor = false;
-            HasInterfaces = false;
         }
 
         public string MainClassName { get; set; }
@@ -28,10 +28,10 @@ namespace GennyMcGenFace.Models
         public string Tests { get; set; }
 
         public bool HasConstructor { get; set; }
-        public bool HasInterfaces { get; set; }
 
         public List<string> PrivateClassesAtTop { get; set; }
         public List<string> NameSpaces { get; set; }
+        public List<CodeInterface> Interfaces { get; set; }
 
         public List<ParamsGenerated> ParamsGenerated { get; set; }
         public CodeClass SelectedClass { get; set; }

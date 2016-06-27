@@ -129,6 +129,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\Extensions.cs" />
+    <Compile Include="Helpers\Spacing.cs" />
+    <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="Models\GenOptions.cs" />
     <Compile Include="Models\UnitTestParts.cs" />
     <Compile Include="Parsers\ClassGenerator.cs" />

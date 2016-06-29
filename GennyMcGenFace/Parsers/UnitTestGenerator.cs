@@ -61,7 +61,7 @@ namespace GennyMcGenFace.Parsers
             _parts.HasConstructor = true;
             var paramsStr = GenerateFunctionParamValues(member);
 
-            _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(3), member.Name, paramsStr);
+            _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(2), member.Name, paramsStr);
         }
 
         private string GetInputsBeforeFunctionParams(CodeFunction member)
@@ -94,7 +94,7 @@ namespace GennyMcGenFace.Parsers
 
                 if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
                 {
-                    //generate interface
+                    //generate interfaces
                     paramsStr += GenerateInterface(param) + ", ";
                 }
                 else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
@@ -126,6 +126,12 @@ namespace GennyMcGenFace.Parsers
 
         private string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
         {
+            if (ClassGenerator.IsCodeTypeAList(name))
+            {
+                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromList(fullName));
+                name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
+            }
+
             var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
             if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
 
@@ -135,17 +141,6 @@ namespace GennyMcGenFace.Parsers
 
             var genner = new ClassGenerator(_parts, _opts);
             var inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
-
-            //if (ClassGenerator.IsCodeTypeAList(name))
-            //{
-            //    // inner = genner.IterateMembers(codeType, 2);
-            //    inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
-            //}
-            //else
-            //{
-            //    // inner = genner.GenerateClassStr((CodeClass)codeTypeRef.CodeType, _opts, 0).Replace("var obj = ", "");
-            //    inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
-            //}
 
             var gen = string.Format(@"
         private static {0} {1}() {{

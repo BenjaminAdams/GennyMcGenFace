@@ -22,7 +22,7 @@ namespace GennyMcGenFace.UI
         {
             Left = 50,
             Top = 50,
-            Width = 700,
+            Width = 800,
             AutoCompleteMode = AutoCompleteMode.SuggestAppend,
             AutoCompleteSource = AutoCompleteSource.CustomSource
         };
@@ -35,7 +35,7 @@ namespace GennyMcGenFace.UI
 
             _mainForm = new Form()
             {
-                Width = 800,
+                Width = 900,
                 Height = 740,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = "Pick a class",
@@ -63,7 +63,7 @@ namespace GennyMcGenFace.UI
                 Width = 50,
                 Height = 50,
                 Top = 15,
-                Left = 700,
+                Left = 800,
                 Value = _opts.WordsInStrings,
                 Increment = 1,
                 Maximum = 9,
@@ -75,15 +75,15 @@ namespace GennyMcGenFace.UI
                 Width = 50,
                 Height = 50,
                 Top = 15,
-                Left = 550,
+                Left = 650,
                 Value = _opts.IntLength,
                 Increment = 1,
                 Maximum = 9,
                 Minimum = 0
             };
 
-            var wordsLbl = new Label() { Left = 615, Top = 17, AutoSize = true, Text = "Words in strings" };
-            var intLengthLbl = new Label() { Left = 480, Top = 17, AutoSize = true, Text = "Number size" };
+            var wordsLbl = new Label() { Left = 715, Top = 17, AutoSize = true, Text = "Words in strings" };
+            var intLengthLbl = new Label() { Left = 580, Top = 17, AutoSize = true, Text = "Number size" };
 
             _mainForm.Controls.Add(intLengthLbl);
             _mainForm.Controls.Add(wordsLbl);

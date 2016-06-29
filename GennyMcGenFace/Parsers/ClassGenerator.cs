@@ -19,26 +19,10 @@ namespace GennyMcGenFace.Parsers
 
         public string GenerateClassStr(CodeClass selectedClass, int depth = 0)
         {
-            //if (selectedClass.IsCodeType && IsCodeTypeAList(selectedClass.Name))
-            //{
-            //   // var ttt= (CodeType) selectedClass.;
-            //   // var tmp55 = GetParam(ttt., "", 0);
-            //    var tmp = GetBaseTypeFromList(selectedClass.FullName);
-            //  var baseType=  selectedClass.ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(tmp);
-            //  //  var tmp = GetListParam(((CodeType)selectedClass), "", 0);
-
-            //    var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
-            //    str += IterateMembers(baseType.CodeType, depth);
-            //    str += Spacing.Get(depth) + "};";
-            //    return str;
-            //}
-            //else
-            //{
             var str = string.Format("var obj = new {0}() {{\r\n", selectedClass.FullName);
             str += IterateMembers((CodeType)selectedClass, depth);
             str += Spacing.Get(depth) + "};";
             return str;
-            //  }
         }
 
         public string IterateMembers(CodeType selectedClass, int depth)
@@ -82,81 +66,7 @@ namespace GennyMcGenFace.Parsers
         {
             try
             {
-                member = RemoveNullable(member);
-                AddNameSpace(member);
-
-                if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
-                {
-                    //DateTime
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.Guid")
-                {
-                    //Guid
-                    return string.Format("{0}{1} = new Guid(\"{2}\"),\r\n", Spacing.Get(depth), paramName, Guid.NewGuid());
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.CodeType != null && member.CodeType.Members != null && member.CodeType.Members.Count > 0 && member.CodeType.Kind == vsCMElement.vsCMElementEnum)
-                {
-                    //Enums
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && IsCodeTypeAList(member.CodeType.Name))
-                {
-                    //list types
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-                {
-                    //defined types/objects we have created in our solution
-                    //plain object
-                    //return string.Format("{0}{1} = new {2}() {{\r\n{3}{0}}},\r\n", Spacing.Get(depth), paramName, member.AsFullName, GetParamValue(member, paramName, depth));
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
-                {
-                    //string
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
-                {
-                    //char
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
-                {
-                    //bool
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal || member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble || member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt || member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
-                {
-                    //numbers (except short)
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
-                {
-                    //short
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
-                {
-                    //array
-                    return GetArrayParam(member, paramName, depth);
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
-                {
-                    //byte
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
-                {
-                    //object
-                    return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
-                }
-                else
-                {
-                    //skip
-                    return "";
-                }
+                return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
             }
             catch (Exception ex)
             {
@@ -182,9 +92,14 @@ namespace GennyMcGenFace.Parsers
                 //Enums
                 return member.CodeType.Members.Item(1).FullName;
             }
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.Guid")
+            {
+                //Guid
+                return string.Format("new Guid(\"{0}\")", Guid.NewGuid());
+            }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && IsCodeTypeAList(member.CodeType.Name))
             {
-                return GetListParamValue(member, paramName, depth);
+                return GetListParamValue(member, depth);
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
@@ -226,7 +141,7 @@ namespace GennyMcGenFace.Parsers
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {
                 //array
-                return "it should not get here";
+                return GetArrayParamValue(member, depth);
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
@@ -256,29 +171,29 @@ namespace GennyMcGenFace.Parsers
         }
 
         //list logic
-        private string GetListParamValue(CodeTypeRef member, string paramName, int depth)
+        private string GetListParamValue(CodeTypeRef member, int depth)
         {
-            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromList(member.AsFullName));
+            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromList(member.AsFullName));
             if (baseType == null) return string.Empty;
 
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //typed List
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType, depth + 1));
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}}\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType, depth + 1));
                 return string.Format("new List<{1}>() {{\r\n{2}{0}}}", Spacing.Get(depth), baseType.AsFullName, objAsStr);
             }
             else
             {
                 //generic list, such as string/int
                 // var ListString = new List<System.String>() { "yay" };
-                return string.Format("new List<{2}>() {{ {3} }}", baseType.AsFullName.RemoveSystemFromStr(), GetParamValue(baseType, "", depth + 1));
+                return string.Format("new List<{0}>() {{ {1} }}", baseType.AsFullName.RemoveSystemFromStr(), GetParamValue(baseType, "", depth + 1));
             }
         }
 
         //array logic
-        private string GetArrayParam(CodeTypeRef member, string paramName, int depth)
+        private string GetArrayParamValue(CodeTypeRef member, int depth)
         {
-            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(GetBaseTypeFromArray(member.AsString));
+            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromArray(member.AsString));
             if (baseType == null) return string.Empty;
 
             var typeFullName = string.Format("{0}[]", baseType.AsFullName.RemoveSystemFromStr());
@@ -286,15 +201,14 @@ namespace GennyMcGenFace.Parsers
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //typed Array
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}},\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType, depth + 1));
-                return string.Format("{0}{1} = new {2} {{\r\n{3}{0}}},\r\n", Spacing.Get(depth), paramName, typeFullName, objAsStr);
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}}\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType, depth + 1));
+                return string.Format("new {0} {{\r\n{1}{2}}}", typeFullName, objAsStr, Spacing.Get(depth));
             }
             else
             {
                 //generic array, such as string/int
-                // var ListString = new List<System.String>() { "yay" };
                 // var ListAry = new String[] { "yay" };
-                return string.Format("{0}{1} = new {2} {{ {3} }},\r\n", Spacing.Get(depth), paramName, typeFullName, GetParamValue(baseType, "", depth + 1));
+                return string.Format("new {0} {{ {1} }}", typeFullName, GetParamValue(baseType, "", depth + 1));
             }
         }
 
@@ -304,35 +218,12 @@ namespace GennyMcGenFace.Parsers
             {
                 if (member.CodeType != null && member.CodeType.Name == "Nullable")
                 {
-                    return ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(RemoveNullableStr(member.AsFullName));
+                    return ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.RemoveNullableStr(member.AsFullName));
                 }
             }
             catch { }
 
             return member;
-        }
-
-        //super ugly hack to get the base type that the list is on.  Not sure how else to do it
-        private static string GetBaseTypeFromList(string fullName)
-        {
-            fullName = fullName.Replace("System.Collections.Generic.List<", "");
-            fullName = fullName.Replace("System.Collections.Generic.IEnumerable<", "");
-            fullName = fullName.Replace("System.Collections.Generic.IList<", "");
-            fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
-            fullName = fullName.Replace(">", "");
-            return fullName;
-        }
-
-        private static string RemoveNullableStr(string fullname)
-        {
-            fullname = fullname.Replace("System.Nullable<", "");
-            return fullname.Replace(">", "");
-        }
-
-        //super ugly hack to get the base type that the list is on.  Not sure how else to do it
-        private static string GetBaseTypeFromArray(string fullName)
-        {
-            return fullName.Replace("[]", "");
         }
     }
 }

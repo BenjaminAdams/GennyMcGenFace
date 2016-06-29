@@ -19,7 +19,7 @@ namespace GennyMcGenFace.UI
 
             _editor.Left = 50;
             _editor.Top = 90;
-            _editor.Width = 700;
+            _editor.Width = 800;
             _editor.Height = 600;
 
             _mainForm.Shown += GenerateEditorTxt;

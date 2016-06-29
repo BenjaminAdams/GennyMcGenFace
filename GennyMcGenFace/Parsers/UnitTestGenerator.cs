@@ -70,9 +70,9 @@ namespace GennyMcGenFace.Parsers
             var strInputs = "";
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
-                //get an input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
+                    //get an input object for the class input
                     strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput(param.Name, param.Type.AsFullName, param.Type));
                 }
             }
@@ -126,9 +126,12 @@ namespace GennyMcGenFace.Parsers
 
         private string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
         {
+            var fullNameToUseAsReturnType = fullName;
+
             if (ClassGenerator.IsCodeTypeAList(name))
             {
                 var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, baseType.CodeType.FullName);
                 name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
             }
             else if (name == "Task")
@@ -151,7 +154,7 @@ namespace GennyMcGenFace.Parsers
         private static {0} {1}() {{
             return {2};
         }}
-        ", fullName, functionName, inner);
+        ", fullNameToUseAsReturnType, functionName, inner);
 
             _parts.ParamInputs += gen;
             return functionName;
@@ -194,8 +197,6 @@ namespace GennyMcGenFace.Parsers
                 str += "using NSubstitute;\r\n";
             }
 
-            //str += "using System.Collections.Generic;\r\n";
-
             return str;
         }
 
@@ -221,7 +222,7 @@ namespace GennyMcGenFace.Parsers
                         continue; //no need to mock return type for Void functions
                     }
 
-                    if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                    if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                     {
                         GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
                         returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
@@ -229,7 +230,7 @@ namespace GennyMcGenFace.Parsers
                     else
                     {
                         var genner = new ClassGenerator(_parts, _opts);
-                        returnType = genner.GetParamValue(member.Type, "", 0);
+                        returnType = genner.GetParamValue(baseType, "", 0);
                     }
 
                     if (isAsync)
@@ -257,7 +258,9 @@ namespace GennyMcGenFace.Parsers
 
             foreach (CodeParameter param in face.Parameters.OfType<CodeParameter>())
             {
-                paramsStr += string.Format("Arg.Any<{0}>(), ", param.Type.AsFullName.RemoveSystemFromStr());
+                var name = param.Type.AsString.Replace("System.Collections.Generic.", ""); //we can prolly trust generic list as their type in shortname
+
+                paramsStr += string.Format("Arg.Any<{0}>(), ", name);
             }
 
             paramsStr = paramsStr.TrimEnd().TrimEnd(',');
@@ -266,12 +269,9 @@ namespace GennyMcGenFace.Parsers
 
         private void GenerateOneTestForAFunction(CodeFunction member)
         {
+            var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
+            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
 
-              var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-              var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
-
-                    
-                
             var paramsStr = GenerateFunctionParamValues(member);
 
             var returnsValCode = "var res = ";

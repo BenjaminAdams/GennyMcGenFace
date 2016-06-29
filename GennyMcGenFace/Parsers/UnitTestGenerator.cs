@@ -61,7 +61,7 @@ namespace GennyMcGenFace.Parsers
             _parts.HasConstructor = true;
             var paramsStr = GenerateFunctionParamValues(member);
 
-            _parts.InitCode += string.Format("            _testTarget = new {0}({1});\r\n", member.Name, paramsStr);
+            _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(3), member.Name, paramsStr);
         }
 
         private string GetInputsBeforeFunctionParams(CodeFunction member)
@@ -73,7 +73,7 @@ namespace GennyMcGenFace.Parsers
                 //get an input object for it
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
-                    strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType));
+                    strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput(param.Name, param.Type.AsFullName, param.Type));
                 }
             }
 
@@ -100,12 +100,12 @@ namespace GennyMcGenFace.Parsers
                 else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
                     //if the param is a CodeClass we can create an input object for it
-                    GenerateFunctionParamForClassInput((CodeClass)param.Type.CodeType);
+                    GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
                     paramsStr += string.Format("{0}Input, ", param.Name);
                 }
                 else
                 {
-                    var genner = new ClassGenerator(_parts);
+                    var genner = new ClassGenerator(_parts, _opts);
                     paramsStr += genner.GetParamValue(param.Type, param.Name, 0) + ", ";
                 }
             }
@@ -124,22 +124,34 @@ namespace GennyMcGenFace.Parsers
             return GenPrivateClassNameAtTop(codeInterface.Name);
         }
 
-        private string GenerateFunctionParamForClassInput(CodeClass param)
+        private string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
         {
-            var functionName = string.Format("Get{0}", param.Name);
-            if (_parts.ParamsGenerated.Any(x => x.FullName == param.FullName)) return functionName; //do not add a 2nd one
+            var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
+            if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
 
+            var functionName = string.Format("Get{0}", name);
             //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
-            _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = param.FullName, GetFunctionName = functionName });
+            _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = fullName, GetFunctionName = functionName });
 
-            var genner = new ClassGenerator(_parts);
-            var inner = genner.GenerateClassStr(param, _opts, 2).Replace("var obj = ", "");
+            var genner = new ClassGenerator(_parts, _opts);
+            var inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
+
+            //if (ClassGenerator.IsCodeTypeAList(name))
+            //{
+            //    // inner = genner.IterateMembers(codeType, 2);
+            //    inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
+            //}
+            //else
+            //{
+            //    // inner = genner.GenerateClassStr((CodeClass)codeTypeRef.CodeType, _opts, 0).Replace("var obj = ", "");
+            //    inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
+            //}
 
             var gen = string.Format(@"
         private static {0} {1}() {{
-            return {2}
+            return {2};
         }}
-        ", param.FullName, functionName, inner);
+        ", fullName, functionName, inner);
 
             _parts.ParamInputs += gen;
             return functionName;
@@ -182,6 +194,8 @@ namespace GennyMcGenFace.Parsers
                 str += "using NSubstitute;\r\n";
             }
 
+            str += "using System.Collections.Generic;\r\n";
+
             return str;
         }
 
@@ -193,30 +207,29 @@ namespace GennyMcGenFace.Parsers
             var str = string.Empty;
             foreach (CodeInterface face in _parts.Interfaces)   //foreach interface found in our test class
             {
-                if (face.Kind == vsCMElement.vsCMElementInterface)
+                if (face.Kind != vsCMElement.vsCMElementInterface) continue;
+
+                foreach (CodeFunction member in face.Members.OfType<CodeFunction>()) //foreach function in interface
                 {
-                    foreach (CodeFunction member in face.Members.OfType<CodeFunction>()) //foreach function in interface
+                    var returnType = string.Empty;
+                    if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
                     {
-                        var returnType = string.Empty;
-                        if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
-                        {
-                            continue; //no need to mock return type for Void functions
-                        }
-
-                        if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-                        {
-                            GenerateFunctionParamForClassInput((CodeClass)member.Type.CodeType); //make sure we have created this type so we can return it
-                            returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
-                        }
-                        else
-                        {
-                            var genner = new ClassGenerator(_parts);
-                            returnType = genner.GetParamValue(member.Type, "", 0);
-                        }
-
-                        str += string.Format("{0}{1}.{2}({3})\r\n{4}.Returns({5});\r\n",
-                                            Spacing.Get(2), GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(face), Spacing.Get(4), returnType);
+                        continue; //no need to mock return type for Void functions
                     }
+
+                    if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                    {
+                        GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
+                        returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
+                    }
+                    else
+                    {
+                        var genner = new ClassGenerator(_parts, _opts);
+                        returnType = genner.GetParamValue(member.Type, "", 0);
+                    }
+
+                    str += string.Format("{0}{1}.{2}({3})\r\n{4}.Returns({5});\r\n",
+                        Spacing.Get(2), GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(face), Spacing.Get(4), returnType);
                 }
             }
 

@@ -277,17 +277,19 @@ namespace GennyMcGenFace.Parsers
             var returnsValCode = "var res = ";
             var testReturnType = "void";
 
-            if (isAsync)
-            {
-                returnsValCode += "await ";
-                testReturnType = "async Task";
-            }
+       
 
             var afterFunction = "Assert.IsNotNull(res);\r\n";
             if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
             {
                 returnsValCode = "";
                 afterFunction = "";
+            }
+
+            if (isAsync)
+            {
+                returnsValCode += "await ";
+                testReturnType = "async Task";
             }
 
             var str = string.Format(@"
@@ -297,7 +299,8 @@ namespace GennyMcGenFace.Parsers
             {2}
             {3}_testTarget.{1}({4});
             {5}
-        }}", testReturnType, member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction);
+        }}
+", testReturnType, member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction);
 
             _parts.Tests += str;
         }
@@ -318,8 +321,7 @@ namespace {1}
 {4}
 {5}
         }}
-{6}
-{7}
+{6}{7}
     }}
 }}", GenNameSpaces(), _parts.MainNamespace, _parts.MainClassName.Replace(".", "_"), GenPrivateClassesAtTop(), _parts.InitCode, GenInterfaceMocking(), _parts.Tests, _parts.ParamInputs);
         }

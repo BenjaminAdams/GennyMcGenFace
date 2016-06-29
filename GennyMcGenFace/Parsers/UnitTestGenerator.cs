@@ -128,8 +128,13 @@ namespace GennyMcGenFace.Parsers
         {
             if (ClassGenerator.IsCodeTypeAList(name))
             {
-                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromList(fullName));
+                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
                 name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
+            }
+            else if (name == "Task")
+            {
+                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
             }
 
             var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
@@ -189,7 +194,7 @@ namespace GennyMcGenFace.Parsers
                 str += "using NSubstitute;\r\n";
             }
 
-            str += "using System.Collections.Generic;\r\n";
+            //str += "using System.Collections.Generic;\r\n";
 
             return str;
         }
@@ -207,7 +212,11 @@ namespace GennyMcGenFace.Parsers
                 foreach (CodeFunction member in face.Members.OfType<CodeFunction>()) //foreach function in interface
                 {
                     var returnType = string.Empty;
-                    if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
+
+                    var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
+                    var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+
+                    if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
                     {
                         continue; //no need to mock return type for Void functions
                     }
@@ -221,6 +230,11 @@ namespace GennyMcGenFace.Parsers
                     {
                         var genner = new ClassGenerator(_parts, _opts);
                         returnType = genner.GetParamValue(member.Type, "", 0);
+                    }
+
+                    if (isAsync)
+                    {
+                        returnType = string.Format("Task.FromResult({0})", returnType);
                     }
 
                     str += string.Format("{0}{1}.{2}({3}).Returns({4});\r\n",
@@ -252,11 +266,25 @@ namespace GennyMcGenFace.Parsers
 
         private void GenerateOneTestForAFunction(CodeFunction member)
         {
+
+              var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
+              var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+
+                    
+                
             var paramsStr = GenerateFunctionParamValues(member);
 
             var returnsValCode = "var res = ";
+            var testReturnType = "void";
+
+            if (isAsync)
+            {
+                returnsValCode += "await ";
+                testReturnType = "async Task";
+            }
+
             var afterFunction = "Assert.IsNotNull(res);\r\n";
-            if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid)
+            if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
             {
                 returnsValCode = "";
                 afterFunction = "";
@@ -264,12 +292,12 @@ namespace GennyMcGenFace.Parsers
 
             var str = string.Format(@"
         [TestMethod]
-        public void {0}Test()
+        public {0} {1}Test()
         {{
-            {1}
-            {2}_testTarget.{0}({3});
-            {4}
-        }}", member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction);
+            {2}
+            {3}_testTarget.{1}({4});
+            {5}
+        }}", testReturnType, member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction);
 
             _parts.Tests += str;
         }

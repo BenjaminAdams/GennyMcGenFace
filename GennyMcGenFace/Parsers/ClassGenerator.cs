@@ -173,7 +173,7 @@ namespace GennyMcGenFace.Parsers
         //list logic
         private string GetListParamValue(CodeTypeRef member, int depth)
         {
-            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromList(member.AsFullName));
+            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.AsFullName));
             if (baseType == null) return string.Empty;
 
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)

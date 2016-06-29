@@ -223,8 +223,8 @@ namespace GennyMcGenFace.Parsers
                         returnType = genner.GetParamValue(member.Type, "", 0);
                     }
 
-                    str += string.Format("{0}{1}.{2}({3})\r\n{4}.Returns({5});\r\n",
-                        Spacing.Get(2), GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(face), Spacing.Get(4), returnType);
+                    str += string.Format("{0}{1}.{2}({3}).Returns({4});\r\n",
+                        Spacing.Get(2), GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(member), returnType);
                 }
             }
 
@@ -236,18 +236,16 @@ namespace GennyMcGenFace.Parsers
         /// </summary>
         /// <param name="face"></param>
         /// <returns></returns>
-        private string GetInterfaceArgs(CodeInterface face)
+        private string GetInterfaceArgs(CodeFunction face)
         {
-            //goal Arg.Any<Guid>(), Arg.Any<string>()
+            //goal a string= "Arg.Any<Guid>(), Arg.Any<string>()"
             var paramsStr = string.Empty;
 
-            foreach (CodeFunction member in face.Members.OfType<CodeFunction>())
+            foreach (CodeParameter param in face.Parameters.OfType<CodeParameter>())
             {
-                foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
-                {
-                    paramsStr += string.Format("Arg.Any<{0}>(), ", param.Type.AsFullName.RemoveSystemFromStr());
-                }
+                paramsStr += string.Format("Arg.Any<{0}>(), ", param.Type.AsFullName.RemoveSystemFromStr());
             }
+
             paramsStr = paramsStr.TrimEnd().TrimEnd(',');
             return paramsStr;
         }

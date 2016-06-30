@@ -103,8 +103,15 @@ namespace GennyMcGenFace.Parsers
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
+                var paramsStr = string.Empty;
+                var constructor = (CodeFunction)member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
+                if (constructor != null && constructor.Kind == vsCMElement.vsCMElementFunction)
+                {
+                    paramsStr = GenerateFunctionParamValues((CodeFunction)constructor);
+                }
+
                 //defined types/objects we have created
-                return string.Format("new {1}() {{\r\n{2}{0}}}", Spacing.Get(depth), member.AsFullName, IterateMembers(member.CodeType, depth));
+                return string.Format("new {1}({3}) {{\r\n{2}{0}}}", Spacing.Get(depth), member.AsFullName, IterateMembers(member.CodeType, depth), paramsStr);
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {
@@ -158,6 +165,85 @@ namespace GennyMcGenFace.Parsers
                 //skip
                 return "";
             }
+        }
+
+        public string GenerateFunctionParamValues(CodeFunction member)
+        {
+            if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
+            var paramsStr = "";
+
+            foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
+            {
+                if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
+                {
+                    _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+                }
+
+                if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
+                {
+                    //generate interfaces
+                    paramsStr += GenerateInterface(param) + ", ";
+                }
+                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                {
+                    //if the param is a CodeClass we can create an input object for it
+                    GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
+                    paramsStr += string.Format("{0}Input, ", param.Name);
+                }
+                else
+                {
+                    paramsStr += GetParamValue(param.Type, param.Name, 0) + ", ";
+                }
+            }
+
+            paramsStr = paramsStr.Trim().TrimEnd(',');
+            return paramsStr;
+        }
+
+        private string GenerateInterface(CodeParameter param)
+        {
+            var codeInterface = (CodeInterface)param.Type.CodeType;
+
+            _parts.PrivateClassesAtTop.AddIfNotExists(codeInterface.Name);
+            _parts.Interfaces.AddIfNotExists(codeInterface);
+
+            return DTEHelper.GenPrivateClassNameAtTop(codeInterface.Name);
+        }
+
+        public string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
+        {
+            var fullNameToUseAsReturnType = fullName;
+
+            if (ClassGenerator.IsCodeTypeAList(name))
+            {
+                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, baseType.CodeType.Name);
+                name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
+            }
+            else if (name == "Task")
+            {
+                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
+            }
+
+            var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
+            if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
+
+            var functionName = string.Format("Get{0}", name);
+            //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
+            _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = fullName, GetFunctionName = functionName });
+
+            //  var genner = new ClassGenerator(_parts, _opts);
+            var inner = GetParamValue(codeTypeRef, string.Empty, 3);
+
+            var gen = string.Format(@"
+        private static {0} {1}() {{
+            return {2};
+        }}
+        ", fullNameToUseAsReturnType, functionName, inner);
+
+            _parts.ParamInputs += gen;
+            return functionName;
         }
 
         //this will help http://stackoverflow.com/questions/6303425/auto-generate-properties-when-creating-object

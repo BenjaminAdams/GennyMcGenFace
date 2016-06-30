@@ -13,7 +13,7 @@ namespace GennyMcGenFace.Helpers
             var spaces = "";
             for (var i = 0; i < depth; i++)
             {
-                spaces += "     ";
+                spaces += "    ";
             }
 
             return spaces;

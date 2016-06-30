@@ -9,7 +9,7 @@
             fullName = fullName.Replace("System.Collections.Generic.IList<", "");
             fullName = fullName.Replace("System.Collections.Generic.ICollection<", "");
             fullName = fullName.Replace("System.Threading.Tasks.Task<", "");
-            
+
             fullName = fullName.Replace(">", "");
             return fullName;
         }
@@ -24,6 +24,11 @@
         public static string GetBaseTypeFromArray(string fullName)
         {
             return fullName.Replace("[]", "");
+        }
+
+        public static string GenPrivateClassNameAtTop(string className)
+        {
+            return "_" + className.FirstCharacterToLower();
         }
     }
 }

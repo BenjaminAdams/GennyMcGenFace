@@ -67,8 +67,20 @@ namespace GennyMcGenFace.Parsers
             {
                 var asProp = member as CodeProperty;
 
-                if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic)
+
+
+
+                if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic && asProp.Setter.Access == vsCMAccess.vsCMAccessPublic)
                 {
+                 
+
+                    // var sttr = asProp.Setter as CodeFunction;
+                  //  var start = (TextPoint) sttr.GetStartPoint();
+                   // var finish = (TextPoint) sttr.GetEndPoint();
+                  //  var src = start.CreateEditPoint().GetText(finish);
+
+
+
                     return true;
                 }
                 else

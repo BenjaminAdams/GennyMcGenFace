@@ -29,6 +29,8 @@ namespace GennyMcGenFace.Models
 
         public bool HasConstructor { get; set; }
 
+        public bool IsStaticClass { get; set; }
+
         public List<string> PrivateClassesAtTop { get; set; }
         public List<string> NameSpaces { get; set; }
         public List<CodeInterface> Interfaces { get; set; }

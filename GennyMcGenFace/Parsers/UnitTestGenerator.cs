@@ -15,21 +15,26 @@ namespace GennyMcGenFace.Parsers
     {
         private static GenOptions _opts;
         private UnitTestParts _parts;
+        private ClassGenerator _genner;
 
         public UnitTestGenerator(CodeClass selectedClass)
         {
+     
+
             _parts = new UnitTestParts
             {
                 MainClassName = selectedClass.FullName,
                 MainNamespace = selectedClass.Namespace.FullName,
                 SelectedClass = selectedClass,
-                NameSpaces = new List<string>() { selectedClass.Namespace.FullName }
+                NameSpaces = new List<string>() { selectedClass.Namespace.FullName },
+                IsStaticClass = selectedClass.IsAbstract
             };
         }
 
         public string Gen(CodeClass selectedClass, GenOptions opts)
         {
             _opts = opts;
+            _genner = new ClassGenerator(_parts, _opts);
 
             ParseFunctions(selectedClass);
 
@@ -38,6 +43,7 @@ namespace GennyMcGenFace.Parsers
 
         private void ParseFunctions(CodeClass selectedClass)
         {
+            var constructorsGenerated = 0;
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
                 if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
@@ -48,20 +54,33 @@ namespace GennyMcGenFace.Parsers
                 if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
                 {
                     GenerateConstructor(member);
+                    constructorsGenerated++;
                 }
                 else
                 {
                     GenerateOneTestForAFunction(member);
                 }
             }
+
+            if (selectedClass.IsAbstract == false && constructorsGenerated == 0)
+            {
+                GenerateEmptyConstructor();
+            }
         }
 
         private void GenerateConstructor(CodeFunction member)
         {
             _parts.HasConstructor = true;
-            var paramsStr = GenerateFunctionParamValues(member);
+            var paramsStr = _genner.GenerateFunctionParamValues(member);
 
             _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(2), member.Name, paramsStr);
+        }
+
+        private void GenerateEmptyConstructor()
+        {
+            _parts.HasConstructor = true;
+
+            _parts.InitCode += string.Format("{0}_testTarget = new {1}();\r\n", Spacing.Get(2), _parts.SelectedClass.Name);
         }
 
         private string GetInputsBeforeFunctionParams(CodeFunction member)
@@ -73,97 +92,46 @@ namespace GennyMcGenFace.Parsers
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
                     //get an input object for the class input
-                    strInputs += string.Format("var {0}Input = {1}();\r\n", param.Name, GenerateFunctionParamForClassInput(param.Name, param.Type.AsFullName, param.Type));
+                    strInputs += string.Format("{0}var {1}Input = {2}();\r\n", Spacing.Get(3), param.Name, _genner.GenerateFunctionParamForClassInput(param.Name, param.Type.AsFullName, param.Type));
                 }
             }
 
             return strInputs;
         }
 
-        private string GenerateFunctionParamValues(CodeFunction member)
-        {
-            if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
-            var paramsStr = "";
+        //private string GenerateFunctionParamValues(CodeFunction member)
+        //{
+        //    if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
+        //    var paramsStr = "";
 
-            foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
-            {
-                if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
-                {
-                    _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
-                }
+        //    foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
+        //    {
+        //        if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
+        //        {
+        //            _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+        //        }
 
-                if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
-                {
-                    //generate interfaces
-                    paramsStr += GenerateInterface(param) + ", ";
-                }
-                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-                {
-                    //if the param is a CodeClass we can create an input object for it
-                    GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
-                    paramsStr += string.Format("{0}Input, ", param.Name);
-                }
-                else
-                {
-                    var genner = new ClassGenerator(_parts, _opts);
-                    paramsStr += genner.GetParamValue(param.Type, param.Name, 0) + ", ";
-                }
-            }
+        //        if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
+        //        {
+        //            //generate interfaces
+        //            paramsStr += GenerateInterface(param) + ", ";
+        //        }
+        //        else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+        //        {
+        //            //if the param is a CodeClass we can create an input object for it
+        //            GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
+        //            paramsStr += string.Format("{0}Input, ", param.Name);
+        //        }
+        //        else
+        //        {
+        //            //var genner = new ClassGenerator(_parts, _opts);
+        //            paramsStr += _genner.GetParamValue(param.Type, param.Name, 0) + ", ";
+        //        }
+        //    }
 
-            paramsStr = paramsStr.Trim().TrimEnd(',');
-            return paramsStr;
-        }
-
-        private string GenerateInterface(CodeParameter param)
-        {
-            var codeInterface = (CodeInterface)param.Type.CodeType;
-
-            _parts.PrivateClassesAtTop.AddIfNotExists(codeInterface.Name);
-            _parts.Interfaces.AddIfNotExists(codeInterface);
-
-            return GenPrivateClassNameAtTop(codeInterface.Name);
-        }
-
-        private string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
-        {
-            var fullNameToUseAsReturnType = fullName;
-
-            if (ClassGenerator.IsCodeTypeAList(name))
-            {
-                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
-                fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, baseType.CodeType.FullName);
-                name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
-            }
-            else if (name == "Task")
-            {
-                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
-                name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
-            }
-
-            var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
-            if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
-
-            var functionName = string.Format("Get{0}", name);
-            //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
-            _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = fullName, GetFunctionName = functionName });
-
-            var genner = new ClassGenerator(_parts, _opts);
-            var inner = genner.GetParamValue(codeTypeRef, string.Empty, 2);
-
-            var gen = string.Format(@"
-        private static {0} {1}() {{
-            return {2};
-        }}
-        ", fullNameToUseAsReturnType, functionName, inner);
-
-            _parts.ParamInputs += gen;
-            return functionName;
-        }
-
-        private static string GenPrivateClassNameAtTop(string className)
-        {
-            return "_" + className.FirstCharacterToLower();
-        }
+        //    paramsStr = paramsStr.Trim().TrimEnd(',');
+        //    return paramsStr;
+        //}
 
         private string GenPrivateClassesAtTop()
         {
@@ -171,12 +139,12 @@ namespace GennyMcGenFace.Parsers
             var str = string.Empty;
             foreach (var className in _parts.PrivateClassesAtTop)
             {
-                var privClassName = GenPrivateClassNameAtTop(className);
+                var privClassName = DTEHelper.GenPrivateClassNameAtTop(className);
                 str += string.Format(frmtStr, className, privClassName);
                 _parts.InitCode = string.Format(Spacing.Get(2) + "{0} = Substitute.For<{1}>();\r\n", privClassName, className) + _parts.InitCode;
             }
 
-            if (_parts.HasConstructor)
+            if (_parts.HasConstructor || _parts.IsStaticClass == false)
             {
                 str += string.Format(frmtStr, _parts.SelectedClass.Name, "_testTarget");
             }
@@ -212,34 +180,40 @@ namespace GennyMcGenFace.Parsers
 
                 foreach (CodeFunction member in face.Members.OfType<CodeFunction>()) //foreach function in interface
                 {
-                    var returnType = string.Empty;
-
-                    var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-                    var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
-
-                    if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                    try
                     {
-                        continue; //no need to mock return type for Void functions
-                    }
+                        var returnType = string.Empty;
 
-                    if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-                    {
-                        GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
-                        returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
-                    }
-                    else
-                    {
-                        var genner = new ClassGenerator(_parts, _opts);
-                        returnType = genner.GetParamValue(baseType, "", 0);
-                    }
+                        var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
+                        var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
 
-                    if (isAsync)
-                    {
-                        returnType = string.Format("Task.FromResult({0})", returnType);
-                    }
+                        if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                        {
+                            continue; //no need to mock return type for Void functions
+                        }
 
-                    str += string.Format("{0}{1}.{2}({3}).Returns({4});\r\n",
-                        Spacing.Get(2), GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(member), returnType);
+                        if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                        {
+                            _genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
+                            returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
+                        }
+                        else
+                        {
+                            // var genner = new ClassGenerator(_parts, _opts);
+                            returnType = _genner.GetParamValue(baseType, "", 0);
+                        }
+
+                        if (isAsync)
+                        {
+                            returnType = string.Format("Task.FromResult({0})", returnType);
+                        }
+
+                        str += string.Format("{0}{1}.{2}({3}).Returns({4});\r\n", Spacing.Get(2), DTEHelper.GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(member), returnType);
+                    }
+                    catch (Exception ex)
+                    {
+                        str += string.Format("{0}//Could not generate {1};\r\n", Spacing.Get(2), member.Name);
+                    }
                 }
             }
 
@@ -269,40 +243,53 @@ namespace GennyMcGenFace.Parsers
 
         private void GenerateOneTestForAFunction(CodeFunction member)
         {
-            var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
-
-            var paramsStr = GenerateFunctionParamValues(member);
-
-            var returnsValCode = "var res = ";
-            var testReturnType = "void";
-
-       
-
-            var afterFunction = "Assert.IsNotNull(res);\r\n";
-            if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+            try
             {
-                returnsValCode = "";
-                afterFunction = "";
-            }
+                var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
+                var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
 
-            if (isAsync)
-            {
-                returnsValCode += "await ";
-                testReturnType = "async Task";
-            }
+                var paramsStr = _genner.GenerateFunctionParamValues(member);
 
-            var str = string.Format(@"
+                var returnsValCode = "var res = ";
+                var testReturnType = "void";
+                var functionTargetName = "_testTarget";
+
+                var afterFunction = "Assert.IsNotNull(res);\r\n";
+                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                {
+                    returnsValCode = "";
+                    afterFunction = "";
+                }
+
+                if (isAsync)
+                {
+                    returnsValCode += "await ";
+                    testReturnType = "async Task";
+                }
+
+                if (member.IsShared) //IsShared means its a static function
+                {
+                    functionTargetName = _parts.SelectedClass.Name;
+                }
+
+                var str = string.Format(@"
         [TestMethod]
         public {0} {1}Test()
         {{
-            {2}
-            {3}_testTarget.{1}({4});
+{2}
+            {3}{6}.{1}({4});
             {5}
         }}
-", testReturnType, member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction);
+", testReturnType, member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction, functionTargetName);
 
-            _parts.Tests += str;
+                _parts.Tests += str;
+            }
+            catch (Exception ex)
+            {
+                _parts.Tests += string.Format(@"
+Unable to generate unit test for {0}
+", member.FullName);
+            }
         }
 
         private string PutItAllTogether()

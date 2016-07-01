@@ -19,8 +19,6 @@ namespace GennyMcGenFace.Parsers
 
         public UnitTestGenerator(CodeClass selectedClass)
         {
-     
-
             _parts = new UnitTestParts
             {
                 MainClassName = selectedClass.FullName,
@@ -43,7 +41,7 @@ namespace GennyMcGenFace.Parsers
 
         private void ParseFunctions(CodeClass selectedClass)
         {
-            var isStatic = false;
+            var isStatic = true;
             var constructorsGenerated = 0;
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
@@ -60,12 +58,16 @@ namespace GennyMcGenFace.Parsers
                 else
                 {
                     GenerateOneTestForAFunction(member);
-                    if (member.IsShared == true)
+                    if (member.IsShared == false)
                     {
-                        isStatic = true;
+                        //we are assuming if there is one non-static function in the class then the entire class is non-static
+                        //The Docs claim CodeClass.IsShared property is available, but this prop is hidden for CodeClass
+                        isStatic = false;
                     }
                 }
             }
+
+            _parts.IsStaticClass = isStatic;
 
             try
             {
@@ -73,10 +75,10 @@ namespace GennyMcGenFace.Parsers
                 {
                     GenerateEmptyConstructor();
                 }
-            }catch(Exception ex){
-
             }
-          
+            catch (Exception ex)
+            {
+            }
         }
 
         private void GenerateConstructor(CodeFunction member)
@@ -253,6 +255,19 @@ namespace GennyMcGenFace.Parsers
             return paramsStr;
         }
 
+        private string GetFunctionName(string name)
+        {
+            if (_parts.FunctionNamesCreated.Contains(name))
+            {
+                var rnd = new Random();
+                name = name + rnd.Next(1, 99999);
+            }
+
+            _parts.FunctionNamesCreated.AddIfNotExists(name);
+
+            return name;
+        }
+
         private void GenerateOneTestForAFunction(CodeFunction member)
         {
             try
@@ -284,6 +299,8 @@ namespace GennyMcGenFace.Parsers
                     functionTargetName = _parts.SelectedClass.Name;
                 }
 
+                var functionName = GetFunctionName(member.Name);
+
                 var str = string.Format(@"
         [TestMethod]
         public {0} {1}Test()
@@ -292,7 +309,7 @@ namespace GennyMcGenFace.Parsers
             {3}{6}.{1}({4});
             {5}
         }}
-", testReturnType, member.Name, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction, functionTargetName);
+", testReturnType, functionName, GetInputsBeforeFunctionParams(member), returnsValCode, paramsStr, afterFunction, functionTargetName);
 
                 _parts.Tests += str;
             }

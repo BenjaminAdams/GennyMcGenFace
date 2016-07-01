@@ -43,6 +43,7 @@ namespace GennyMcGenFace.Parsers
 
         private void ParseFunctions(CodeClass selectedClass)
         {
+            var isStatic = false;
             var constructorsGenerated = 0;
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
@@ -59,13 +60,23 @@ namespace GennyMcGenFace.Parsers
                 else
                 {
                     GenerateOneTestForAFunction(member);
+                    if (member.IsShared == true)
+                    {
+                        isStatic = true;
+                    }
                 }
             }
 
-            if (selectedClass.IsAbstract == false && constructorsGenerated == 0)
+            try
             {
-                GenerateEmptyConstructor();
+                if (selectedClass.IsAbstract == false && isStatic == false && constructorsGenerated == 0)
+                {
+                    GenerateEmptyConstructor();
+                }
+            }catch(Exception ex){
+
             }
+          
         }
 
         private void GenerateConstructor(CodeFunction member)
@@ -73,14 +84,14 @@ namespace GennyMcGenFace.Parsers
             _parts.HasConstructor = true;
             var paramsStr = _genner.GenerateFunctionParamValues(member);
 
-            _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(2), member.Name, paramsStr);
+            _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(3), member.Name, paramsStr);
         }
 
         private void GenerateEmptyConstructor()
         {
             _parts.HasConstructor = true;
 
-            _parts.InitCode += string.Format("{0}_testTarget = new {1}();\r\n", Spacing.Get(2), _parts.SelectedClass.Name);
+            _parts.InitCode += string.Format("{0}_testTarget = new {1}();\r\n", Spacing.Get(3), _parts.SelectedClass.Name);
         }
 
         private string GetInputsBeforeFunctionParams(CodeFunction member)
@@ -141,7 +152,7 @@ namespace GennyMcGenFace.Parsers
             {
                 var privClassName = DTEHelper.GenPrivateClassNameAtTop(className);
                 str += string.Format(frmtStr, className, privClassName);
-                _parts.InitCode = string.Format(Spacing.Get(2) + "{0} = Substitute.For<{1}>();\r\n", privClassName, className) + _parts.InitCode;
+                _parts.InitCode = string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className) + _parts.InitCode;
             }
 
             if (_parts.HasConstructor || _parts.IsStaticClass == false)
@@ -208,15 +219,16 @@ namespace GennyMcGenFace.Parsers
                             returnType = string.Format("Task.FromResult({0})", returnType);
                         }
 
-                        str += string.Format("{0}{1}.{2}({3}).Returns({4});\r\n", Spacing.Get(2), DTEHelper.GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(member), returnType);
+                        str += string.Format("{0}{1}.{2}({3}).Returns({4});\r\n", Spacing.Get(3), DTEHelper.GenPrivateClassNameAtTop(face.Name), member.Name, GetInterfaceArgs(member), returnType);
                     }
                     catch (Exception ex)
                     {
-                        str += string.Format("{0}//Could not generate {1};\r\n", Spacing.Get(2), member.Name);
+                        str += string.Format("{0}//Could not generate {1};\r\n", Spacing.Get(3), member.Name);
                     }
                 }
             }
 
+            str = str.ReplaceLastOccurrence("\r\n", "");
             return str;
         }
 

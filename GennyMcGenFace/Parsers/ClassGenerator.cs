@@ -103,15 +103,23 @@ namespace GennyMcGenFace.Parsers
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
-                var paramsStr = string.Empty;
+                var paramsInConstructorStr = string.Empty;
                 var constructor = (CodeFunction)member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
                 if (constructor != null && constructor.Kind == vsCMElement.vsCMElementFunction)
                 {
-                    paramsStr = GenerateFunctionParamValues((CodeFunction)constructor);
+                    paramsInConstructorStr = GenerateFunctionParamValues((CodeFunction)constructor);
+                }
+
+                var includedNewLineInParams = string.Empty;
+                var initializerStr = IterateMembers(member.CodeType, depth);
+                if (string.IsNullOrWhiteSpace(initializerStr)==false)
+                {
+                    includedNewLineInParams = "\r\n";
+                    initializerStr +=  Spacing.Get(depth);
                 }
 
                 //defined types/objects we have created
-                return string.Format("new {1}({3}) {{\r\n{2}{0}}}", Spacing.Get(depth), member.AsFullName, IterateMembers(member.CodeType, depth), paramsStr);
+                return string.Format("new {0}({2}) {{{3}{1}}}", member.AsString, initializerStr, paramsInConstructorStr, includedNewLineInParams);
             }
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {

@@ -41,7 +41,7 @@ namespace GennyMcGenFace
             var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
             var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, true);
 
-            var ui = new ClassGenUI(foundClasses);
+            var ui = new ClassGenUI(foundClasses, dte);
         }
 
         private void DisplayGenMapperTestUI(object sender, EventArgs e)
@@ -61,7 +61,7 @@ namespace GennyMcGenFace
             var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
             var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, false);
 
-            var ui = new UnitTestGenUI(foundClasses);
+            var ui = new UnitTestGenUI(foundClasses, dte);
         }
     }
 }

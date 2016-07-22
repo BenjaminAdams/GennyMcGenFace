@@ -130,6 +130,7 @@
   <ItemGroup>
     <Compile Include="Helpers\DTEHelper.cs" />
     <Compile Include="Helpers\Extensions.cs" />
+    <Compile Include="Helpers\ProjectHelpers.cs" />
     <Compile Include="Helpers\Spacing.cs" />
     <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="Models\GenOptions.cs" />

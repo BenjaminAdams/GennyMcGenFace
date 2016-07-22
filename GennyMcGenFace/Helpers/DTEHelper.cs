@@ -14,6 +14,16 @@
             return fullName;
         }
 
+        public static string RemoveTask(string fullName)
+        {
+            if (!fullName.Contains("System.Threading.Tasks.Task<")) return fullName;
+
+            fullName = fullName.Replace("System.Threading.Tasks.Task<", "");
+            fullName = fullName.Remove(fullName.LastIndexOf(">"), 1);
+
+            return fullName;
+        }
+
         public static string RemoveNullableStr(string fullname)
         {
             fullname = fullname.Replace("System.Nullable<", "");

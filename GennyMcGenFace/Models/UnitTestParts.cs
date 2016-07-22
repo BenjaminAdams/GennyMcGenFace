@@ -18,6 +18,7 @@ namespace GennyMcGenFace.Models
             PrivateClassesAtTop = new List<string>();
             NameSpaces = new List<string>();
             Interfaces = new List<CodeInterface>();
+            FunctionNamesCreated = new List<string>();
             HasConstructor = false;
         }
 
@@ -32,6 +33,7 @@ namespace GennyMcGenFace.Models
         public bool IsStaticClass { get; set; }
 
         public List<string> PrivateClassesAtTop { get; set; }
+        public List<string> FunctionNamesCreated { get; set; }
         public List<string> NameSpaces { get; set; }
         public List<CodeInterface> Interfaces { get; set; }
 

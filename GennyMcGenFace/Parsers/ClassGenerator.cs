@@ -1,8 +1,12 @@
 ﻿using EnvDTE;
+using EnvDTE80;
 using GennyMcGenFace.Helpers;
 using GennyMcGenFace.Models;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace GennyMcGenFace.Parsers
 {
@@ -10,11 +14,28 @@ namespace GennyMcGenFace.Parsers
     {
         private static GenOptions _opts;
         private UnitTestParts _parts;
+        private DTE2 _dte;
 
-        public ClassGenerator(UnitTestParts parts, GenOptions opts)
+        private static readonly Dictionary<string, Type> _knownPrimitiveTypes = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase) {
+            { "string", typeof( string ) },
+            { "int", typeof( int ) },
+            { "long", typeof( long ) },
+            { "short", typeof( short ) },
+            { "byte", typeof( byte ) },
+            { "uint", typeof( uint ) },
+            { "ulong", typeof( ulong ) },
+            { "ushort", typeof( ushort ) },
+            { "sbyte", typeof( sbyte ) },
+            { "float", typeof( float ) },
+            { "double", typeof( double ) },
+            { "decimal", typeof( decimal ) },
+        };
+
+        public ClassGenerator(UnitTestParts parts, GenOptions opts, DTE2 dte)
         {
             _opts = opts;
             _parts = parts ?? new UnitTestParts();
+            _dte = dte;
         }
 
         public string GenerateClassStr(CodeClass selectedClass, int depth = 0)
@@ -43,7 +64,6 @@ namespace GennyMcGenFace.Parsers
                 }
             }
 
-            // str = str.TrimEnd('\n').TrimEnd('\r').TrimEnd(',');
             str = str.ReplaceLastOccurrence(",", "");
             return str;
         }
@@ -64,6 +84,8 @@ namespace GennyMcGenFace.Parsers
 
         public string GetParam(CodeTypeRef member, string paramName, int depth)
         {
+            if (depth > 6) return string.Empty; //prevent ifinite loop
+
             try
             {
                 return string.Format("{0}{1} = {2},\r\n", Spacing.Get(depth), paramName, GetParamValue(member, paramName, depth));
@@ -77,6 +99,7 @@ namespace GennyMcGenFace.Parsers
         public string GetParamValue(CodeTypeRef member, string paramName, int depth)
         {
             member = RemoveNullable(member);
+
             AddNameSpace(member);
 
             if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
@@ -112,10 +135,10 @@ namespace GennyMcGenFace.Parsers
 
                 var includedNewLineInParams = string.Empty;
                 var initializerStr = IterateMembers(member.CodeType, depth);
-                if (string.IsNullOrWhiteSpace(initializerStr)==false)
+                if (string.IsNullOrWhiteSpace(initializerStr) == false)
                 {
                     includedNewLineInParams = "\r\n";
-                    initializerStr +=  Spacing.Get(depth);
+                    initializerStr += Spacing.Get(depth);
                 }
 
                 //defined types/objects we have created
@@ -224,13 +247,15 @@ namespace GennyMcGenFace.Parsers
 
             if (ClassGenerator.IsCodeTypeAList(name))
             {
-                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                //var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                var baseType = TryToGuessGenericArgument(codeTypeRef);
                 fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, baseType.CodeType.Name);
                 name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
             }
             else if (name == "Task")
             {
-                var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                //var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
+                var baseType = TryToGuessGenericArgument(codeTypeRef);
                 name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
             }
 
@@ -267,7 +292,8 @@ namespace GennyMcGenFace.Parsers
         //list logic
         private string GetListParamValue(CodeTypeRef member, int depth)
         {
-            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.AsFullName));
+            //  var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.AsFullName));
+            var baseType = TryToGuessGenericArgument(member);
             if (baseType == null) return string.Empty;
 
             if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
@@ -287,7 +313,10 @@ namespace GennyMcGenFace.Parsers
         //array logic
         private string GetArrayParamValue(CodeTypeRef member, int depth)
         {
-            var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromArray(member.AsString));
+            //var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseTypeFromArray(member.AsString));
+            // var baseType = TryToGuessGenericArgument(member);
+            var baseType = member.ElementType;
+
             if (baseType == null) return string.Empty;
 
             var typeFullName = string.Format("{0}[]", baseType.AsFullName.RemoveSystemFromStr());
@@ -306,16 +335,96 @@ namespace GennyMcGenFace.Parsers
             }
         }
 
-        private static CodeTypeRef RemoveNullable(CodeTypeRef member)
+        public CodeTypeRef TryToGuessGenericArgument(CodeTypeRef member, ProjectItem projItem = null)
+        {
+            var codeTypeRef2 = member as CodeTypeRef2;
+            if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
+
+            // There is no way to extract generic parameter as CodeTypeRef or something similar
+            // (see http://social.msdn.microsoft.com/Forums/vstudio/en-US/09504bdc-2b81-405a-a2f7-158fb721ee90/envdte-envdte80-codetyperef2-and-generic-types?forum=vsx)
+            // but we can make it work at least for some simple case with the following heuristic:
+            //  1) get the argument's local name by parsing the type reference's full text
+            //  2) if it's a known primitive (i.e. string, int, etc.), return that
+            //  3) otherwise, guess that it's a type from the same namespace and same project,
+            //     and use the project CodeModel to retrieve it by full name
+            //  4) if CodeModel returns null - well, bad luck, don't have any more guesses
+
+            var typeNameAsInCode = DTEHelper.RemoveTask(codeTypeRef2.AsFullName);
+            // var typeNameAsInCode = codeTypeRef2.AsString.Replace("?", "");
+            //typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? "";
+            typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? typeNameAsInCode;
+
+            CodeModel projCodeModel;
+
+            try
+            {
+                projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+            }
+            catch (COMException)
+            {
+                projCodeModel = GetActiveProject().CodeModel;
+            }
+
+            var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+            if (codeType == null && projItem != null)
+            {
+                codeType = projItem.ContainingProject.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+            }
+
+            if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
+            return member;
+        }
+
+        private static string TryToGuessFullName(string typeName)
+        {
+            Type primitiveType;
+            if (_knownPrimitiveTypes.TryGetValue(typeName, out primitiveType)) return primitiveType.FullName;
+            else return typeName;
+        }
+
+        private static bool IsPrimitive(CodeTypeRef codeTypeRef)
+        {
+            if (codeTypeRef.TypeKind != vsCMTypeRef.vsCMTypeRefOther && codeTypeRef.TypeKind != vsCMTypeRef.vsCMTypeRefCodeType)
+                return true;
+
+            if (codeTypeRef.AsString.EndsWith("DateTime", StringComparison.Ordinal))
+                return true;
+
+            return false;
+        }
+
+        public Project GetActiveProject()
+        {
+            try
+            {
+                Array activeSolutionProjects = _dte.ActiveSolutionProjects as Array;
+
+                if (activeSolutionProjects != null && activeSolutionProjects.Length > 0)
+                    return activeSolutionProjects.GetValue(0) as Project;
+            }
+            catch (Exception ex)
+            {
+                // Logger.Log("Error getting the active project" + ex);
+            }
+
+            return null;
+        }
+
+        private CodeTypeRef RemoveNullable(CodeTypeRef member)
         {
             try
             {
                 if (member.CodeType != null && member.CodeType.Name == "Nullable")
                 {
-                    return ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.RemoveNullableStr(member.AsFullName));
+                    return TryToGuessGenericArgument(member);
+                    // return ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.RemoveNullableStr(member.AsFullName));
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                //
+            }
 
             return member;
         }

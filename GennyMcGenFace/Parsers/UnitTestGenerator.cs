@@ -1,4 +1,5 @@
 ﻿using EnvDTE;
+using EnvDTE80;
 using GennyMcGenFace.Helpers;
 using GennyMcGenFace.Models;
 using System;
@@ -16,9 +17,12 @@ namespace GennyMcGenFace.Parsers
         private static GenOptions _opts;
         private UnitTestParts _parts;
         private ClassGenerator _genner;
+        private DTE2 _dte;
 
-        public UnitTestGenerator(CodeClass selectedClass)
+        public UnitTestGenerator(CodeClass selectedClass, DTE2 dte)
         {
+            _dte = dte;
+
             _parts = new UnitTestParts
             {
                 MainClassName = selectedClass.FullName,
@@ -32,7 +36,7 @@ namespace GennyMcGenFace.Parsers
         public string Gen(CodeClass selectedClass, GenOptions opts)
         {
             _opts = opts;
-            _genner = new ClassGenerator(_parts, _opts);
+            _genner = new ClassGenerator(_parts, _opts, _dte);
 
             ParseFunctions(selectedClass);
 
@@ -198,7 +202,20 @@ namespace GennyMcGenFace.Parsers
                         var returnType = string.Empty;
 
                         var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-                        var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+                        // var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+                        ProjectItem projItem = null;
+
+                        try
+                        {
+                            if (member.ProjectItem != null)
+                            {
+                                projItem = member.ProjectItem;
+                            }
+                        }
+                        catch { }
+                     
+
+                        var baseType = _genner.TryToGuessGenericArgument(member.Type, projItem);
 
                         if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
                         {
@@ -207,7 +224,8 @@ namespace GennyMcGenFace.Parsers
 
                         if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                         {
-                            _genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
+                            _genner.GenerateFunctionParamForClassInput(baseType.CodeType.Name, baseType.CodeType.FullName, baseType);
+                            //_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
                             returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
                         }
                         else
@@ -268,12 +286,18 @@ namespace GennyMcGenFace.Parsers
             return name;
         }
 
+        private string GenerateAssertsForFunction(CodeFunction member)
+        {
+            return "";
+        }
+
         private void GenerateOneTestForAFunction(CodeFunction member)
         {
             try
             {
                 var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-                var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+                //  var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+                var baseType = _genner.TryToGuessGenericArgument(member.Type);
 
                 var paramsStr = _genner.GenerateFunctionParamValues(member);
 
@@ -282,10 +306,16 @@ namespace GennyMcGenFace.Parsers
                 var functionTargetName = "_testTarget";
 
                 var afterFunction = "Assert.IsNotNull(res);\r\n";
-                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid ||
+                    (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
                 {
                     returnsValCode = "";
                     afterFunction = "";
+                }
+                else
+                {
+                    //todo generate asserts based on the return type
+                    afterFunction += GenerateAssertsForFunction(member);
                 }
 
                 if (isAsync)

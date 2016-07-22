@@ -68,13 +68,27 @@ namespace GennyMcGenFace.Parsers
             return str;
         }
 
-        private void AddNameSpace(CodeTypeRef member)
+        public void AddNameSpace(CodeTypeRef member)
         {
             try
             {
                 if (member != null && member.CodeType != null && member.CodeType.Namespace != null)
                 {
                     _parts.NameSpaces.AddIfNotExists(member.CodeType.Namespace.FullName);
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+
+        public void AddNameSpace(CodeNamespace ns)
+        {
+            try
+            {
+                if (ns != null)
+                {
+                    _parts.NameSpaces.AddIfNotExists(ns.FullName);
                 }
             }
             catch (Exception ex)
@@ -215,8 +229,27 @@ namespace GennyMcGenFace.Parsers
                     //generate interfaces
                     paramsStr += GenerateInterface(param) + ", ";
                 }
+                if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && param.Type.AsString == "System.DateTime")
+                {
+                    //DateTime
+                    var year = DateTime.Now.Year;
+                    var month = DateTime.Now.Month;
+                    var day = DateTime.Now.Day;
+                    return string.Format("new DateTime({0}, {1}, {2})", year, month, day);
+                }
+                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && param.Type.CodeType != null && param.Type.CodeType.Members != null && param.Type.CodeType.Members.Count > 0 && param.Type.CodeType.Kind == vsCMElement.vsCMElementEnum)
+                {
+                    //Enums
+                    return param.Type.CodeType.Members.Item(1).FullName;
+                }
+                else if (param.Type != null &&  param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && param.Type.AsString == "System.Guid")
+                {
+                    //Guid
+                    return string.Format("new Guid(\"{0}\")", Guid.NewGuid());
+                }
                 else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
+                    //functions
                     //if the param is a CodeClass we can create an input object for it
                     GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
                     paramsStr += string.Format("{0}Input, ", param.Name);
@@ -337,43 +370,50 @@ namespace GennyMcGenFace.Parsers
 
         public CodeTypeRef TryToGuessGenericArgument(CodeTypeRef member, ProjectItem projItem = null)
         {
-            var codeTypeRef2 = member as CodeTypeRef2;
-            if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
-
-            // There is no way to extract generic parameter as CodeTypeRef or something similar
-            // (see http://social.msdn.microsoft.com/Forums/vstudio/en-US/09504bdc-2b81-405a-a2f7-158fb721ee90/envdte-envdte80-codetyperef2-and-generic-types?forum=vsx)
-            // but we can make it work at least for some simple case with the following heuristic:
-            //  1) get the argument's local name by parsing the type reference's full text
-            //  2) if it's a known primitive (i.e. string, int, etc.), return that
-            //  3) otherwise, guess that it's a type from the same namespace and same project,
-            //     and use the project CodeModel to retrieve it by full name
-            //  4) if CodeModel returns null - well, bad luck, don't have any more guesses
-
-            var typeNameAsInCode = DTEHelper.RemoveTask(codeTypeRef2.AsFullName);
-            // var typeNameAsInCode = codeTypeRef2.AsString.Replace("?", "");
-            //typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? "";
-            typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? typeNameAsInCode;
-
-            CodeModel projCodeModel;
-
             try
             {
-                projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
-            }
-            catch (COMException)
-            {
-                projCodeModel = GetActiveProject().CodeModel;
-            }
+                var codeTypeRef2 = member as CodeTypeRef2;
+                if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
 
-            var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+                // There is no way to extract generic parameter as CodeTypeRef or something similar
+                // (see http://social.msdn.microsoft.com/Forums/vstudio/en-US/09504bdc-2b81-405a-a2f7-158fb721ee90/envdte-envdte80-codetyperef2-and-generic-types?forum=vsx)
+                // but we can make it work at least for some simple case with the following heuristic:
+                //  1) get the argument's local name by parsing the type reference's full text
+                //  2) if it's a known primitive (i.e. string, int, etc.), return that
+                //  3) otherwise, guess that it's a type from the same namespace and same project,
+                //     and use the project CodeModel to retrieve it by full name
+                //  4) if CodeModel returns null - well, bad luck, don't have any more guesses
 
-            if (codeType == null && projItem != null)
-            {
-                codeType = projItem.ContainingProject.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+                var typeNameAsInCode = DTEHelper.RemoveTask(codeTypeRef2.AsFullName);
+                // var typeNameAsInCode = codeTypeRef2.AsString.Replace("?", "");
+                //typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? "";
+                typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? typeNameAsInCode;
+
+                CodeModel projCodeModel;
+
+                try
+                {
+                    projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                }
+                catch (COMException)
+                {
+                    projCodeModel = GetActiveProject().CodeModel;
+                }
+
+                var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+                if (codeType == null && projItem != null)
+                {
+                    codeType = projItem.ContainingProject.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+                }
+
+                if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
+                return member;
+            }catch(Exception ex){
+
+                return member;
             }
-
-            if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
-            return member;
+      
         }
 
         private static string TryToGuessFullName(string typeName)

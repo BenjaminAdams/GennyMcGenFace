@@ -195,6 +195,8 @@ namespace GennyMcGenFace.Parsers
             {
                 if (face.Kind != vsCMElement.vsCMElementInterface) continue;
 
+                _genner.AddNameSpace(face.Namespace);
+
                 foreach (CodeFunction member in face.Members.OfType<CodeFunction>()) //foreach function in interface
                 {
                     try
@@ -213,7 +215,6 @@ namespace GennyMcGenFace.Parsers
                             }
                         }
                         catch { }
-                     
 
                         var baseType = _genner.TryToGuessGenericArgument(member.Type, projItem);
 
@@ -226,7 +227,7 @@ namespace GennyMcGenFace.Parsers
                         {
                             _genner.GenerateFunctionParamForClassInput(baseType.CodeType.Name, baseType.CodeType.FullName, baseType);
                             //_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
-                            returnType = _parts.GetParamFunctionName(member.Type.AsFullName) + "()";
+                            returnType = _parts.GetParamFunctionName(baseType.CodeType.FullName) + "()";
                         }
                         else
                         {

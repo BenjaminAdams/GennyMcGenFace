@@ -229,30 +229,14 @@ namespace GennyMcGenFace.Parsers
                     //generate interfaces
                     paramsStr += GenerateInterface(param) + ", ";
                 }
-                if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && param.Type.AsString == "System.DateTime")
-                {
-                    //DateTime
-                    var year = DateTime.Now.Year;
-                    var month = DateTime.Now.Month;
-                    var day = DateTime.Now.Day;
-                    return string.Format("new DateTime({0}, {1}, {2})", year, month, day);
-                }
-                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && param.Type.CodeType != null && param.Type.CodeType.Members != null && param.Type.CodeType.Members.Count > 0 && param.Type.CodeType.Kind == vsCMElement.vsCMElementEnum)
-                {
-                    //Enums
-                    return param.Type.CodeType.Members.Item(1).FullName;
-                }
-                else if (param.Type != null &&  param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && param.Type.AsString == "System.Guid")
-                {
-                    //Guid
-                    return string.Format("new Guid(\"{0}\")", Guid.NewGuid());
-                }
-                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (param.Type.AsString != "System.Guid" && param.Type.AsString != "System.DateTime" && param.Type.CodeType.Kind != vsCMElement.vsCMElementEnum))
                 {
                     //functions
                     //if the param is a CodeClass we can create an input object for it
-                    GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
-                    paramsStr += string.Format("{0}Input, ", param.Name);
+
+                    var functionName = GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
+                    // paramsStr += string.Format("{0}Input, ", param.Name);
+                    paramsStr += string.Format("{0}(), ", functionName);
                 }
                 else
                 {
@@ -270,19 +254,23 @@ namespace GennyMcGenFace.Parsers
 
             _parts.PrivateClassesAtTop.AddIfNotExists(codeInterface.Name);
             _parts.Interfaces.AddIfNotExists(codeInterface);
+            AddNameSpace(param.Type.CodeType.Namespace);
 
             return DTEHelper.GenPrivateClassNameAtTop(codeInterface.Name);
         }
 
         public string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
         {
+            fullName = fullName.Replace("?", "");
+            name = name.Replace("?", "");
+
             var fullNameToUseAsReturnType = fullName;
 
             if (ClassGenerator.IsCodeTypeAList(name))
             {
                 //var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
                 var baseType = TryToGuessGenericArgument(codeTypeRef);
-                fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, baseType.CodeType.Name);
+                fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, codeTypeRef.CodeType.Name);
                 name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
             }
             else if (name == "Task")
@@ -290,6 +278,7 @@ namespace GennyMcGenFace.Parsers
                 //var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
                 var baseType = TryToGuessGenericArgument(codeTypeRef);
                 name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
+                fullNameToUseAsReturnType = DTEHelper.RemoveTask(fullNameToUseAsReturnType);
             }
 
             var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
@@ -409,11 +398,11 @@ namespace GennyMcGenFace.Parsers
 
                 if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
                 return member;
-            }catch(Exception ex){
-
+            }
+            catch (Exception ex)
+            {
                 return member;
             }
-      
         }
 
         private static string TryToGuessFullName(string typeName)

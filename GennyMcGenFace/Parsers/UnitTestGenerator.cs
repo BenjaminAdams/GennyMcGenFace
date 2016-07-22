@@ -106,6 +106,9 @@ namespace GennyMcGenFace.Parsers
             var strInputs = "";
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
+
+                if (param.Type.AsString == "System.Guid" || param.Type.AsString == "System.DateTime" || param.Type.CodeType.Kind == vsCMElement.vsCMElementEnum) continue;
+
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
                     //get an input object for the class input
@@ -225,9 +228,9 @@ namespace GennyMcGenFace.Parsers
 
                         if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                         {
-                            _genner.GenerateFunctionParamForClassInput(baseType.CodeType.Name, baseType.CodeType.FullName, baseType);
+                            _genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, baseType);
                             //_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
-                            returnType = _parts.GetParamFunctionName(baseType.CodeType.FullName) + "()";
+                            returnType = _parts.GetParamFunctionName(member.Type.CodeType.FullName) + "()";
                         }
                         else
                         {
@@ -249,7 +252,7 @@ namespace GennyMcGenFace.Parsers
                 }
             }
 
-            str = str.ReplaceLastOccurrence("\r\n", "");
+           // str = str.ReplaceLastOccurrence("\r\n", "");
             return str;
         }
 
@@ -307,8 +310,7 @@ namespace GennyMcGenFace.Parsers
                 var functionTargetName = "_testTarget";
 
                 var afterFunction = "Assert.IsNotNull(res);\r\n";
-                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid ||
-                    (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
                 {
                     returnsValCode = "";
                     afterFunction = "";

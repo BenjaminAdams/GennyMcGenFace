@@ -226,7 +226,7 @@ namespace GennyMcGenFace.Parsers
             {
                 if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                 {
-                    _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+                    _parts.NameSpaces.AddIfNotExists(param.Type.CodeType.Namespace.FullName);
                 }
 
                 if (param.Type.CodeType.Bases.Cast<CodeClass>().Any(item => item.FullName == "System.Data.Entity.DbContext"))
@@ -453,7 +453,6 @@ namespace GennyMcGenFace.Parsers
                 if (member.CodeType != null && member.CodeType.Name == "Nullable")
                 {
                     return TryToGuessGenericArgument(member);
-                    // return ((CodeProperty)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.RemoveNullableStr(member.AsFullName));
                 }
             }
             catch (Exception ex)

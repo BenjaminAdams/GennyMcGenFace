@@ -224,34 +224,48 @@ namespace GennyMcGenFace.Parsers
 
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
-                if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
+                try
+                {                 
+                    if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
+                    {
+                        AddNameSpace(param.Type.CodeType.Namespace);
+                    }
+
+                    if (param.IsCodeType == false)
+                    {
+                        var tmp = "crap";
+                    }
+
+
+                    if (param.Type.CodeType.Bases.Cast<CodeClass>().Any(item => item.FullName == "System.Data.Entity.DbContext"))
+                    {
+                        //Genny would create a huge class of a mock database that wouldnt even work!
+                        paramsStr += string.Format("new {0}(), ", param.Type.CodeType.Name);
+                    }
+                    else if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
+                    {
+                        //generate interfaces
+                        paramsStr += GenerateInterface(param) + ", ";
+                    }
+                    else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (param.Type.AsString != "System.Guid" && param.Type.AsString != "System.DateTime" && param.Type.CodeType.Kind != vsCMElement.vsCMElementEnum))
+                    {
+                        //functions
+                        //if the param is a CodeClass we can create an input object for it
+
+                        var functionName = GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
+                        // paramsStr += string.Format("{0}Input, ", param.Name);
+                        paramsStr += string.Format("{0}(), ", functionName);
+                    }
+                    else
+                    {
+                        paramsStr += GetParamValue(param.Type, param.Name, 0) + ", ";
+                    }
+                }catch(Exception ex)
                 {
-                    _parts.NameSpaces.AddIfNotExists(param.Type.CodeType.Namespace.FullName);
+                    paramsStr += string.Format("failed {0}, ", param.Name);
                 }
 
-                if (param.Type.CodeType.Bases.Cast<CodeClass>().Any(item => item.FullName == "System.Data.Entity.DbContext"))
-                {
-                    //Genny would create a huge class of a mock database that wouldnt even work!
-                    paramsStr += string.Format("new {0}(), ", param.Type.CodeType.Name);
-                }
-                else if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
-                {
-                    //generate interfaces
-                    paramsStr += GenerateInterface(param) + ", ";
-                }
-                else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (param.Type.AsString != "System.Guid" && param.Type.AsString != "System.DateTime" && param.Type.CodeType.Kind != vsCMElement.vsCMElementEnum))
-                {
-                    //functions
-                    //if the param is a CodeClass we can create an input object for it
-
-                    var functionName = GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
-                    // paramsStr += string.Format("{0}Input, ", param.Name);
-                    paramsStr += string.Format("{0}(), ", functionName);
-                }
-                else
-                {
-                    paramsStr += GetParamValue(param.Type, param.Name, 0) + ", ";
-                }
+          
             }
 
             paramsStr = paramsStr.Trim().TrimEnd(',');
@@ -274,22 +288,22 @@ namespace GennyMcGenFace.Parsers
             fullName = fullName.Replace("?", "");
             name = name.Replace("?", "");
 
+            codeTypeRef = RemoveTask(codeTypeRef);
+
             var fullNameToUseAsReturnType = fullName;
 
             if (ClassGenerator.IsCodeTypeAList(name))
             {
-                //var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
                 var baseType = TryToGuessGenericArgument(codeTypeRef);
                 fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, codeTypeRef.CodeType.Name);
                 name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
             }
-            else if (name == "Task")
-            {
-                //var baseType = ((CodeElement)codeTypeRef.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(fullName));
-                var baseType = TryToGuessGenericArgument(codeTypeRef);
-                name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
-                fullNameToUseAsReturnType = DTEHelper.RemoveTask(fullNameToUseAsReturnType);
-            }
+            //else if (name == "Task")
+            //{
+            //    var baseType = TryToGuessGenericArgument(codeTypeRef);
+            //    name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
+            //    fullNameToUseAsReturnType = DTEHelper.RemoveTaskFromString(fullNameToUseAsReturnType);
+            //}
 
             var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
             if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
@@ -366,12 +380,13 @@ namespace GennyMcGenFace.Parsers
             }
         }
 
-        public CodeTypeRef TryToGuessGenericArgument(CodeTypeRef member, ProjectItem projItem = null)
+        public CodeTypeRef TryToGuessGenericArgument(CodeTypeRef member)
         {
             try
             {
                 if (member.AsFullName.Contains("<") == false) return member; //No need to attempt to guess, this is not a generic class
 
+                //todo check if we need to cast to CodeTypeRef2 here
                 var codeTypeRef2 = member as CodeTypeRef2;
                 if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
 
@@ -384,7 +399,7 @@ namespace GennyMcGenFace.Parsers
                 //     and use the project CodeModel to retrieve it by full name
                 //  4) if CodeModel returns null - well, bad luck, don't have any more guesses
 
-                var typeNameAsInCode = DTEHelper.RemoveTask(codeTypeRef2.AsFullName);
+                var typeNameAsInCode = DTEHelper.RemoveTaskFromString(codeTypeRef2.AsFullName);
                 // var typeNameAsInCode = codeTypeRef2.AsString.Replace("?", "");
                 //typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? "";
                 typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? typeNameAsInCode;
@@ -395,7 +410,41 @@ namespace GennyMcGenFace.Parsers
                 {
                     projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
                 }
-                catch (COMException)
+                catch (COMException ex)
+                {
+                    projCodeModel = GetActiveProject().CodeModel;
+                }
+
+                var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+                if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
+                return member;
+            }
+            catch (Exception ex)
+            {
+                return member;
+            }
+        }
+
+        public CodeTypeRef RemoveTask(CodeTypeRef member)
+        {
+            try
+            {
+                if (member.AsFullName.Contains("<") == false) return member; //No need to attempt to guess, this is not a generic class
+
+                //todo check if we need to cast to CodeTypeRef2 here
+                var codeTypeRef2 = member as CodeTypeRef2;
+                if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
+
+                var typeNameAsInCode = DTEHelper.RemoveTaskFromString(codeTypeRef2.AsFullName);
+
+                CodeModel projCodeModel;
+
+                try
+                {
+                    projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                }
+                catch (COMException ex)
                 {
                     projCodeModel = GetActiveProject().CodeModel;
                 }

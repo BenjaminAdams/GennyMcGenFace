@@ -49,28 +49,38 @@ namespace GennyMcGenFace.Parsers
             var constructorsGenerated = 0;
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
-                if (member.Access != vsCMAccess.vsCMAccessPublic) continue;
 
-                if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
+                try
                 {
-                    _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
-                }
+                    if (member.Access != vsCMAccess.vsCMAccessPublic && member.Access != vsCMAccess.vsCMAccessProtected) continue;
 
-                if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
-                {
-                    GenerateConstructor(member);
-                    constructorsGenerated++;
-                }
-                else
-                {
-                    GenerateOneTestForAFunction(member);
-                    if (member.IsShared == false)
+                    if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                     {
-                        //we are assuming if there is one non-static function in the class then the entire class is non-static
-                        //The Docs claim CodeClass.IsShared property is available, but this prop is hidden for CodeClass
-                        isStatic = false;
+                        _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
+                    }
+
+                    if (member.FunctionKind == vsCMFunction.vsCMFunctionConstructor)
+                    {
+                        GenerateConstructor(member);
+                        constructorsGenerated++;
+                    }
+                    else
+                    {
+                        GenerateOneTestForAFunction(member);
+                        if (member.IsShared == false)
+                        {
+                            //we are assuming if there is one non-static function in the class then the entire class is non-static
+                            //The Docs claim CodeClass.IsShared property is available, but this prop is hidden for CodeClass
+                            isStatic = false;
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    //failed in function
+                }
+
+             
             }
 
             _parts.IsStaticClass = isStatic;
@@ -174,34 +184,22 @@ namespace GennyMcGenFace.Parsers
                         var returnType = string.Empty;
 
                         var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-                        // var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
-                        ProjectItem projItem = null;
 
-                        try
-                        {
-                            if (member.ProjectItem != null)
-                            {
-                                projItem = member.ProjectItem;
-                            }
-                        }
-                        catch { }
-
-                        var baseType = _genner.TryToGuessGenericArgument(member.Type, projItem);
+                        var baseType = _genner.RemoveTask(member.Type);
 
                         if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
                         {
                             continue; //no need to mock return type for Void functions
                         }
 
-                        if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+                        if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (baseType.AsString != "System.Guid" && baseType.AsString != "System.DateTime" && baseType.CodeType.Kind != vsCMElement.vsCMElementEnum))
                         {
-                            _genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, baseType);
-                            //_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
+                            _genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type);
+                            ////_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
                             returnType = _parts.GetParamFunctionName(member.Type.CodeType.FullName) + "()";
                         }
                         else
                         {
-                            // var genner = new ClassGenerator(_parts, _opts);
                             returnType = _genner.GetParamValue(baseType, "", 0);
                         }
 
@@ -267,7 +265,7 @@ namespace GennyMcGenFace.Parsers
             try
             {
                 var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-                //  var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.Type.CodeType.FullName));
+               
                 var baseType = _genner.TryToGuessGenericArgument(member.Type);
 
                 var paramsStr = _genner.GenerateFunctionParamValues(member);

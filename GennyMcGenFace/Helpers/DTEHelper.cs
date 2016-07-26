@@ -14,7 +14,7 @@
             return fullName;
         }
 
-        public static string RemoveTask(string fullName)
+        public static string RemoveTaskFromString(string fullName)
         {
             if (!fullName.Contains("System.Threading.Tasks.Task<")) return fullName;
 

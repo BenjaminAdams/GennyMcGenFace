@@ -66,13 +66,13 @@
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
 
-      <Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenClass" priority="0x0100" type="Button">
+      <!--<Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenClass" priority="0x0100" type="Button">
         <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />
         <Icon guid="mcFaceGuid" id="mcFaceImg" />
         <Strings>
           <ButtonText>Generate Values for a Class</ButtonText>
         </Strings>
-      </Button>
+      </Button>-->
 
       <!--<Button guid="guidGennyMcGenFaceCmdSet" id="cmdGennyGenMapperTest" priority="0x0101" type="Button">
         <Parent guid="guidGennyMcGenFaceCmdSet" id="MyMenuGroup" />

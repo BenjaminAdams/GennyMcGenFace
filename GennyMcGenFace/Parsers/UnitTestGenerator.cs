@@ -49,6 +49,8 @@ namespace GennyMcGenFace.Parsers
             var constructorsGenerated = 0;
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
+                if (member.Access != vsCMAccess.vsCMAccessPublic) continue;
+
                 if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                 {
                     _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
@@ -106,7 +108,6 @@ namespace GennyMcGenFace.Parsers
             var strInputs = "";
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
-
                 if (param.Type.AsString == "System.Guid" || param.Type.AsString == "System.DateTime" || param.Type.CodeType.Kind == vsCMElement.vsCMElementEnum) continue;
 
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
@@ -118,40 +119,6 @@ namespace GennyMcGenFace.Parsers
 
             return strInputs;
         }
-
-        //private string GenerateFunctionParamValues(CodeFunction member)
-        //{
-        //    if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
-        //    var paramsStr = "";
-
-        //    foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
-        //    {
-        //        if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
-        //        {
-        //            _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
-        //        }
-
-        //        if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
-        //        {
-        //            //generate interfaces
-        //            paramsStr += GenerateInterface(param) + ", ";
-        //        }
-        //        else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
-        //        {
-        //            //if the param is a CodeClass we can create an input object for it
-        //            GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
-        //            paramsStr += string.Format("{0}Input, ", param.Name);
-        //        }
-        //        else
-        //        {
-        //            //var genner = new ClassGenerator(_parts, _opts);
-        //            paramsStr += _genner.GetParamValue(param.Type, param.Name, 0) + ", ";
-        //        }
-        //    }
-
-        //    paramsStr = paramsStr.Trim().TrimEnd(',');
-        //    return paramsStr;
-        //}
 
         private string GenPrivateClassesAtTop()
         {
@@ -252,7 +219,7 @@ namespace GennyMcGenFace.Parsers
                 }
             }
 
-           // str = str.ReplaceLastOccurrence("\r\n", "");
+            // str = str.ReplaceLastOccurrence("\r\n", "");
             return str;
         }
 

@@ -28,31 +28,31 @@ namespace GennyMcGenFace
             if (mcs == null) throw new Exception("Could not load plugin");
 
             // Create the command for the menu item.
-            mcs.AddCommand(new MenuCommand(DisplayGenClassUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass)));
-            mcs.AddCommand(new MenuCommand(DisplayGenMapperTestUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenMapperTest)));
+            // mcs.AddCommand(new MenuCommand(DisplayGenClassUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass)));
+            //  mcs.AddCommand(new MenuCommand(DisplayGenMapperTestUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenMapperTest)));
             mcs.AddCommand(new MenuCommand(DisplayGenUnitTestUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenUnitTest)));
         }
 
-        private void DisplayGenClassUI(object sender, EventArgs e)
-        {
-            var dte = GetService(typeof(SDTE)) as DTE2;
-            if (dte == null) throw new Exception("Could not load plugin");
+        //private void DisplayGenClassUI(object sender, EventArgs e)
+        //{
+        //    var dte = GetService(typeof(SDTE)) as DTE2;
+        //    if (dte == null) throw new Exception("Could not load plugin");
 
-            var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
-            var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, true);
+        //    var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
+        //    var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, true);
 
-            var ui = new ClassGenUI(foundClasses, dte);
-        }
+        //    var ui = new ClassGenUI(foundClasses, dte);
+        //}
 
-        private void DisplayGenMapperTestUI(object sender, EventArgs e)
-        {
-            var dte = GetService(typeof(SDTE)) as DTE2;
-            if (dte == null) throw new Exception("Could not load plugin");
-            var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
-            var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, true);
+        //private void DisplayGenMapperTestUI(object sender, EventArgs e)
+        //{
+        //    var dte = GetService(typeof(SDTE)) as DTE2;
+        //    if (dte == null) throw new Exception("Could not load plugin");
+        //    var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
+        //    var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, true);
 
-            var ui = new MapperGenUI(foundClasses);
-        }
+        //    var ui = new MapperGenUI(foundClasses);
+        //}
 
         private void DisplayGenUnitTestUI(object sender, EventArgs e)
         {

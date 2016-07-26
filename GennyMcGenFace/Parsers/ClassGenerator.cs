@@ -114,6 +114,8 @@ namespace GennyMcGenFace.Parsers
         {
             member = RemoveNullable(member);
 
+            if (member.CodeType == null) return "Error";
+
             AddNameSpace(member);
 
             if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
@@ -141,10 +143,13 @@ namespace GennyMcGenFace.Parsers
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 var paramsInConstructorStr = string.Empty;
-                var constructor = (CodeFunction)member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
-                if (constructor != null && constructor.Kind == vsCMElement.vsCMElementFunction)
+                if (member.CodeType.Members != null)
                 {
-                    paramsInConstructorStr = GenerateFunctionParamValues((CodeFunction)constructor);
+                    var constructor = member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
+                    if (constructor != null && constructor.Kind == vsCMElement.vsCMElementFunction)
+                    {
+                        paramsInConstructorStr = GenerateFunctionParamValues(constructor);
+                    }
                 }
 
                 var includedNewLineInParams = string.Empty;
@@ -224,7 +229,12 @@ namespace GennyMcGenFace.Parsers
                     _parts.NameSpaces.AddIfNotExists(member.Type.CodeType.Namespace.FullName);
                 }
 
-                if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
+                if (param.Type.CodeType.Bases.Cast<CodeClass>().Any(item => item.FullName == "System.Data.Entity.DbContext"))
+                {
+                    //Genny would create a huge class of a mock database that wouldnt even work!
+                    paramsStr += string.Format("new {0}(), ", param.Type.CodeType.Name);
+                }
+                else if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
                 {
                     //generate interfaces
                     paramsStr += GenerateInterface(param) + ", ";
@@ -314,7 +324,6 @@ namespace GennyMcGenFace.Parsers
         //list logic
         private string GetListParamValue(CodeTypeRef member, int depth)
         {
-            //  var baseType = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel.CreateCodeTypeRef(DTEHelper.GetBaseType(member.AsFullName));
             var baseType = TryToGuessGenericArgument(member);
             if (baseType == null) return string.Empty;
 
@@ -361,6 +370,8 @@ namespace GennyMcGenFace.Parsers
         {
             try
             {
+                if (member.AsFullName.Contains("<") == false) return member; //No need to attempt to guess, this is not a generic class
+
                 var codeTypeRef2 = member as CodeTypeRef2;
                 if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
 
@@ -390,11 +401,6 @@ namespace GennyMcGenFace.Parsers
                 }
 
                 var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
-
-                if (codeType == null && projItem != null)
-                {
-                    codeType = projItem.ContainingProject.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
-                }
 
                 if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
                 return member;

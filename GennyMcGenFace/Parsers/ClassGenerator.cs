@@ -114,11 +114,17 @@ namespace GennyMcGenFace.Parsers
         {
             member = RemoveNullable(member);
 
-            if (member.CodeType == null) return "Error";
+           // if (member.CodeType == null) return "Error";
+            if (member == null) return "Error";
 
             AddNameSpace(member);
 
-            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
+            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
+            {
+                //array
+                return GetArrayParamValue(member, depth);
+            }
+            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
             {
                 //DateTime
                 var year = DateTime.Now.Year;
@@ -195,11 +201,7 @@ namespace GennyMcGenFace.Parsers
                 var maxRnd = _opts.IntLength > 4 ? 9999 : _opts.GetMaxIntLength();
                 return StaticRandom.Instance.Next(maxRnd).ToString();
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
-            {
-                //array
-                return GetArrayParamValue(member, depth);
-            }
+            
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
                 //byte
@@ -225,7 +227,7 @@ namespace GennyMcGenFace.Parsers
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
                 try
-                {                 
+                {
                     if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                     {
                         AddNameSpace(param.Type.CodeType.Namespace);
@@ -235,7 +237,6 @@ namespace GennyMcGenFace.Parsers
                     {
                         var tmp = "crap";
                     }
-
 
                     if (param.Type.CodeType.Bases.Cast<CodeClass>().Any(item => item.FullName == "System.Data.Entity.DbContext"))
                     {
@@ -260,12 +261,11 @@ namespace GennyMcGenFace.Parsers
                     {
                         paramsStr += GetParamValue(param.Type, param.Name, 0) + ", ";
                     }
-                }catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     paramsStr += string.Format("failed {0}, ", param.Name);
                 }
-
-          
             }
 
             paramsStr = paramsStr.Trim().TrimEnd(',');
@@ -295,7 +295,7 @@ namespace GennyMcGenFace.Parsers
             if (ClassGenerator.IsCodeTypeAList(name))
             {
                 var baseType = TryToGuessGenericArgument(codeTypeRef);
-                fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, codeTypeRef.CodeType.Name);
+                // fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, codeTypeRef.CodeType.Name);
                 name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
             }
             //else if (name == "Task")

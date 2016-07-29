@@ -432,6 +432,9 @@ namespace GennyMcGenFace.Parsers
                     if (found != null) return found;
                 }
 
+                if (member.AsFullName.Contains("Task<")) return null; //we failed, might as well throw error
+                if (member.AsFullName.Contains("List<")) return null; //we failed, might as well throw error
+
                 return member;
             }
             catch (Exception ex)
@@ -455,7 +458,13 @@ namespace GennyMcGenFace.Parsers
 
                 try
                 {
+                    //var tmp = member.Parent.ProjectItem.ContainingProject.CodeModel;
+
+                    // var tmp = member.CodeType.ProjectItem;
+
                     CodeModel projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                    // CodeModel projCodeModel = ((CodeClass)member.CodeType).ProjectItem.ContainingProject.CodeModel;
+                    // CodeModel projCodeModel = member.CodeType.ProjectItem.ContainingProject.CodeModel;
                     if (projCodeModel == null) return member;
 
                     var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
@@ -468,6 +477,8 @@ namespace GennyMcGenFace.Parsers
                     var found = CheckForTypeInOtherPlaces(typeNameAsInCode);
                     if (found != null) return found;
                 }
+
+                if (member.AsFullName.Contains("Task<")) return null; //we failed, might as well throw error
 
                 return member;
             }
@@ -514,6 +525,8 @@ namespace GennyMcGenFace.Parsers
             {
                 try
                 {
+                    if (proj.CodeModel == null) continue;
+
                     var codeType = proj.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
 
                     if (codeType != null)

@@ -19,6 +19,8 @@ namespace GennyMcGenFace
     [Guid(GuidList.guidGennyMcGenFacePkgString)]
     public sealed class GennyMcGenFacePackage : Package
     {
+        private DTE2 _dte;
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -26,6 +28,9 @@ namespace GennyMcGenFace
             // Add our command handlers for menu (commands must exist in the .vsct file)
             var mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (mcs == null) throw new Exception("Could not load plugin");
+
+            // _dte = GetService(typeof(SDTE)) as DTE2;
+            _dte = GetService(typeof(DTE)) as DTE2;
 
             // Create the command for the menu item.
             // mcs.AddCommand(new MenuCommand(DisplayGenClassUI, new CommandID(GuidList.guidGennyMcGenFaceCmdSet, (int)PkgCmdIDList.cmdGennyGenClass)));
@@ -56,12 +61,12 @@ namespace GennyMcGenFace
 
         private void DisplayGenUnitTestUI(object sender, EventArgs e)
         {
-            var dte = GetService(typeof(SDTE)) as DTE2;
-            if (dte == null) throw new Exception("Could not load plugin");
+            //   var dte = GetService(typeof(SDTE)) as DTE2;
+            if (_dte == null) throw new Exception("Could not load plugin");
             var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
-            var foundClasses = CodeDiscoverer.ClassSearch(dte.Solution.Projects, statusBar, false);
+            var foundClasses = CodeDiscoverer.ClassSearch(_dte.Solution.Projects, statusBar, false);
 
-            var ui = new UnitTestGenUI(foundClasses, dte);
+            var ui = new UnitTestGenUI(foundClasses, _dte);
         }
     }
 }

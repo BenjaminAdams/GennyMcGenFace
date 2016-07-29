@@ -30,8 +30,7 @@ namespace GennyMcGenFace.UI
             _editor.Height = 600;
 
             // _mainForm.Shown += GenerateEditorTxt;
-            _editor.Text = @"
-╔╦╦╦╦╦╦╦╦╦╦╦╦╗
+            _editor.Text = @"╔╦╦╦╦╦╦╦╦╦╦╦╦╗
 ╠╬╬╬╬╬╬╬╬╬╬╬╬╣
 ╠╬╬╬╬╬╬╬╬╬╬╬╬╣
 ╠╬╬█╬╬╬╬╬╬█╬╬╣

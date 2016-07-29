@@ -188,7 +188,7 @@ namespace GennyMcGenFace.Parsers
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal ||
                      member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble ||
                      member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt ||
-                     member.TypeKind == vsCMTypeRef.vsCMTypeRefLong || member.AsString == "uint" ||  member.AsString == "ulong")
+                     member.TypeKind == vsCMTypeRef.vsCMTypeRefLong || member.AsString == "uint" || member.AsString == "ulong")
             {
                 //numbers (except short)
                 if (_opts.IntLength == 0) return "0";
@@ -214,7 +214,7 @@ namespace GennyMcGenFace.Parsers
             else if (member.AsString == "sbyte")
             {
                 //sbyte
-                return StaticRandom.Instance.Next(-128,127).ToString();
+                return StaticRandom.Instance.Next(-128, 127).ToString();
             }
             else if (member.AsString == "ushort")  //no, YOU'RE SHORT!
             {
@@ -292,7 +292,7 @@ namespace GennyMcGenFace.Parsers
             fullName = fullName.Replace("?", "");
             name = name.Replace("?", "");
 
-            codeTypeRef = RemoveTask(codeTypeRef);
+            codeTypeRef = StripGenerics(codeTypeRef);
 
             var fullNameToUseAsReturnType = fullName;
 
@@ -313,17 +313,25 @@ namespace GennyMcGenFace.Parsers
             if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
 
             var functionName = string.Format("Get{0}", name);
+
             //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
             _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = fullName, GetFunctionName = functionName });
 
-            //  var genner = new ClassGenerator(_parts, _opts);
-            var inner = GetParamValue(codeTypeRef, string.Empty, 3);
+            string innerCode;
+            if (functionName == "GetTask")
+            {
+                innerCode = "new Task()";
+            }
+            else
+            {
+                innerCode = GetParamValue(codeTypeRef, string.Empty, 3);
+            }
 
             var gen = string.Format(@"
         private static {0} {1}() {{
             return {2};
         }}
-        ", fullNameToUseAsReturnType, functionName, inner);
+        ", fullNameToUseAsReturnType, functionName, innerCode);
 
             _parts.ParamInputs += gen;
             return functionName;
@@ -424,7 +432,7 @@ namespace GennyMcGenFace.Parsers
                     if (found != null) return found;
                 }
 
-                return null;
+                return member;
             }
             catch (Exception ex)
             {
@@ -432,7 +440,7 @@ namespace GennyMcGenFace.Parsers
             }
         }
 
-        public CodeTypeRef RemoveTask(CodeTypeRef member)
+        public CodeTypeRef StripGenerics(CodeTypeRef member)
         {
             try
             {
@@ -443,6 +451,7 @@ namespace GennyMcGenFace.Parsers
                 if (codeTypeRef2 == null || !codeTypeRef2.IsGeneric) return member;
 
                 var typeNameAsInCode = DTEHelper.RemoveTaskFromString(codeTypeRef2.AsFullName);
+                typeNameAsInCode = DTEHelper.RemoveNullableStr(typeNameAsInCode);
 
                 try
                 {
@@ -460,7 +469,7 @@ namespace GennyMcGenFace.Parsers
                     if (found != null) return found;
                 }
 
-                return null;
+                return member;
             }
             catch (Exception ex)
             {

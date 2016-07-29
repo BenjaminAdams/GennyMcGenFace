@@ -1,5 +1,6 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using FastColoredTextBoxNS;
 using GennyMcGenFace.Helpers;
 using GennyMcGenFace.Models;
 using System;
@@ -18,10 +19,12 @@ namespace GennyMcGenFace.Parsers
         private UnitTestParts _parts;
         private ClassGenerator _genner;
         private DTE2 _dte;
+        private FastColoredTextBox _editor;
 
-        public UnitTestGenerator(CodeClass selectedClass, DTE2 dte)
+        public UnitTestGenerator(CodeClass selectedClass, DTE2 dte, FastColoredTextBox editor)
         {
             _dte = dte;
+            _editor = editor;
 
             _parts = new UnitTestParts
             {
@@ -33,26 +36,37 @@ namespace GennyMcGenFace.Parsers
             };
         }
 
-        public string Gen(CodeClass selectedClass, GenOptions opts)
+        public async Task<string> Gen(CodeClass selectedClass, GenOptions opts)
         {
             _opts = opts;
             _genner = new ClassGenerator(_parts, _opts, _dte);
 
-            ParseFunctions(selectedClass);
+            return await Task.Run(() =>
+             {
+                 ParseFunctions(selectedClass);
+                 return PutItAllTogether();
+             });
+        }
 
-            return PutItAllTogether();
+        private void Log(string msg)
+        {
+            _editor.AppendText(msg);
         }
 
         private void ParseFunctions(CodeClass selectedClass)
         {
             var isStatic = true;
             var constructorsGenerated = 0;
+
+            Log("\r\nGenerating functions\r\n");
+
             foreach (CodeFunction member in selectedClass.Members.OfType<CodeFunction>())
             {
-
                 try
                 {
                     if (member.Access != vsCMAccess.vsCMAccessPublic && member.Access != vsCMAccess.vsCMAccessProtected) continue;
+
+                    Log(member.FullName + "\r\n");
 
                     if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                     {
@@ -79,8 +93,6 @@ namespace GennyMcGenFace.Parsers
                 {
                     //failed in function
                 }
-
-             
             }
 
             _parts.IsStaticClass = isStatic;
@@ -139,7 +151,7 @@ namespace GennyMcGenFace.Parsers
             {
                 var privClassName = DTEHelper.GenPrivateClassNameAtTop(className);
                 str += string.Format(frmtStr, className, privClassName);
-               // _parts.InitCode = string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className) + _parts.InitCode;
+                // _parts.InitCode = string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className) + _parts.InitCode;
                 substitutes += string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className);
             }
 
@@ -147,13 +159,10 @@ namespace GennyMcGenFace.Parsers
 
             _parts.InitCode = substitutes + _parts.InitCode;
 
-
             if (_parts.HasConstructor || _parts.IsStaticClass == false)
             {
                 str += string.Format(frmtStr, _parts.SelectedClass.Name, "_testTarget");
             }
-
-      
 
             return str;
         }
@@ -180,6 +189,8 @@ namespace GennyMcGenFace.Parsers
             //async   _someClass.SomeFunction(Arg.Any<Guid>()).Returns(Task.FromResult(SomeClass));
             //reg     _someClass.SomeFunction(Arg.Any<Guid>()).Returns(SomeClass);
             var str = string.Empty;
+            Log("\r\nGenerating Interfaces\r\n");
+
             foreach (CodeInterface face in _parts.Interfaces)   //foreach interface found in our test class
             {
                 if (face.Kind != vsCMElement.vsCMElementInterface) continue;
@@ -192,24 +203,31 @@ namespace GennyMcGenFace.Parsers
                     {
                         var returnType = string.Empty;
 
+                        if (member.FullName.Contains("GetCreditCardAuthExpirationDate"))
+                        {
+                            var asd = 54;
+                        }
+
                         var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
 
-                        var baseType = _genner.RemoveTask(member.Type);
+                        var memberNoTask = _genner.StripGenerics(member.Type);
 
-                        if (member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                        if (memberNoTask.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || memberNoTask.AsFullName == "System.Threading.Tasks.Task")
                         {
                             continue; //no need to mock return type for Void functions
                         }
 
-                        if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (baseType.AsString != "System.Guid" && baseType.AsString != "System.DateTime" && baseType.CodeType.Kind != vsCMElement.vsCMElementEnum))
+                        Log(member.FullName + "\r\n");
+
+                        if (memberNoTask.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (memberNoTask.AsString != "System.Guid" && memberNoTask.AsString != "System.DateTime" && memberNoTask.CodeType.Kind != vsCMElement.vsCMElementEnum))
                         {
-                            _genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type);
+                            _genner.GenerateFunctionParamForClassInput(memberNoTask.CodeType.Name, memberNoTask.CodeType.FullName, memberNoTask);
                             ////_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
-                            returnType = _parts.GetParamFunctionName(member.Type.CodeType.FullName) + "()";
+                            returnType = _parts.GetParamFunctionName(memberNoTask.CodeType.FullName) + "()";
                         }
                         else
                         {
-                            returnType = _genner.GetParamValue(baseType, "", 0);
+                            returnType = _genner.GetParamValue(memberNoTask, "", 0);
                         }
 
                         if (isAsync)
@@ -274,7 +292,7 @@ namespace GennyMcGenFace.Parsers
             try
             {
                 var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
-               
+
                 var baseType = _genner.TryToGuessGenericArgument(member.Type);
 
                 var paramsStr = _genner.GenerateFunctionParamValues(member);

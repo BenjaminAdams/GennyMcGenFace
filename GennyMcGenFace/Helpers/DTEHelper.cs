@@ -27,7 +27,7 @@
         public static string RemoveNullableStr(string fullname)
         {
             fullname = fullname.Replace("System.Nullable<", "");
-            return fullname.Replace(">", "");
+            return fullname.Remove(fullname.LastIndexOf(">"), 1);
         }
 
         //super ugly hack to get the base type that the list is on.  Not sure how else to do it

@@ -17,6 +17,8 @@ namespace GennyMcGenFace.UI
         protected Form _mainForm;
         protected FastColoredTextBox _editor = new FastColoredTextBox();
         protected AutoCompleteStringCollection _dataSource;
+        protected NumericUpDown _wordsTxt;
+        protected NumericUpDown _intLengthTxt;
 
         protected ComboBox _classNameCombo1 = new ComboListMatcher
         {
@@ -58,7 +60,7 @@ namespace GennyMcGenFace.UI
 
         protected void InitTopRightControls()
         {
-            var wordsTxt = new NumericUpDown()
+            _wordsTxt = new NumericUpDown()
             {
                 Width = 50,
                 Height = 50,
@@ -70,7 +72,7 @@ namespace GennyMcGenFace.UI
                 Minimum = 0
             };
 
-            var intLengthTxt = new NumericUpDown()
+            _intLengthTxt = new NumericUpDown()
             {
                 Width = 50,
                 Height = 50,
@@ -87,11 +89,11 @@ namespace GennyMcGenFace.UI
 
             _mainForm.Controls.Add(intLengthLbl);
             _mainForm.Controls.Add(wordsLbl);
-            _mainForm.Controls.Add(wordsTxt);
-            _mainForm.Controls.Add(intLengthTxt);
+            _mainForm.Controls.Add(_wordsTxt);
+            _mainForm.Controls.Add(_intLengthTxt);
 
-            wordsTxt.ValueChanged += ChangeWordsInStr;
-            intLengthTxt.ValueChanged += ChangeIntLength;
+            _wordsTxt.ValueChanged += ChangeWordsInStr;
+            _intLengthTxt.ValueChanged += ChangeIntLength;
         }
 
         protected void InitCombo1()

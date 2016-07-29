@@ -5,7 +5,7 @@
     <DisplayName>GennyMcGenFace</DisplayName>
     <Description xml:space="preserve">c# unit test generator</Description>
     <MoreInfo>https://github.com/BenjaminAdams/GennyMcGenFace</MoreInfo>
-    <Icon>Resources\mcface.png</Icon>
+    <Icon>Resources\mcface.ico</Icon>
     <PreviewImage>Resources\gennExample.png</PreviewImage>
   </Metadata>
   <Installation InstalledByMsi="false">

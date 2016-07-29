@@ -203,11 +203,6 @@ namespace GennyMcGenFace.Parsers
                     {
                         var returnType = string.Empty;
 
-                        if (member.FullName.Contains("GetCreditCardAuthExpirationDate"))
-                        {
-                            var asd = 54;
-                        }
-
                         var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
 
                         var memberNoTask = _genner.StripGenerics(member.Type);
@@ -239,7 +234,7 @@ namespace GennyMcGenFace.Parsers
                     }
                     catch (Exception ex)
                     {
-                        str += string.Format("{0}//Could not generate {1};\r\n", Spacing.Get(3), member.Name);
+                        str += string.Format("{0}//Could not generate {1}; //You might need to rebuild your solution\r\n", Spacing.Get(3), member.Name);
                     }
                 }
             }

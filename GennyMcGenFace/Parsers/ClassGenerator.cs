@@ -289,10 +289,10 @@ namespace GennyMcGenFace.Parsers
 
         public string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
         {
-            fullName = fullName.Replace("?", "");
-            name = name.Replace("?", "");
-
             codeTypeRef = StripGenerics(codeTypeRef);
+
+            fullName = codeTypeRef.AsFullName.Replace("?", "");
+            name = codeTypeRef.CodeType.Name.Replace("?", "");
 
             var fullNameToUseAsReturnType = fullName;
 

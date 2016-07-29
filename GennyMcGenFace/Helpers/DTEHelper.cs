@@ -24,10 +24,12 @@
             return fullName;
         }
 
-        public static string RemoveNullableStr(string fullname)
+        public static string RemoveNullableStr(string fullName)
         {
-            fullname = fullname.Replace("System.Nullable<", "");
-            return fullname.Remove(fullname.LastIndexOf(">"), 1);
+            if (!fullName.Contains("System.Nullable<")) return fullName;
+
+            fullName = fullName.Replace("System.Nullable<", "");
+            return fullName.Remove(fullName.LastIndexOf(">"), 1);
         }
 
         //super ugly hack to get the base type that the list is on.  Not sure how else to do it

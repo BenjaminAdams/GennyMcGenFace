@@ -98,7 +98,7 @@ namespace GennyMcGenFace.Parsers
 
         public string GetParam(CodeTypeRef member, string paramName, int depth)
         {
-            if (depth > 6) return string.Empty; //prevent ifinite loop
+            if (depth > 7) return string.Empty; //prevent ifinite loop
 
             try
             {
@@ -114,7 +114,7 @@ namespace GennyMcGenFace.Parsers
         {
             member = RemoveNullable(member);
 
-           // if (member.CodeType == null) return "Error";
+            // if (member.CodeType == null) return "Error";
             if (member == null) return "Error";
 
             AddNameSpace(member);
@@ -188,7 +188,7 @@ namespace GennyMcGenFace.Parsers
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal ||
                      member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble ||
                      member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt ||
-                     member.TypeKind == vsCMTypeRef.vsCMTypeRefLong)
+                     member.TypeKind == vsCMTypeRef.vsCMTypeRefLong || member.AsString == "uint" ||  member.AsString == "ulong")
             {
                 //numbers (except short)
                 if (_opts.IntLength == 0) return "0";
@@ -201,7 +201,6 @@ namespace GennyMcGenFace.Parsers
                 var maxRnd = _opts.IntLength > 4 ? 9999 : _opts.GetMaxIntLength();
                 return StaticRandom.Instance.Next(maxRnd).ToString();
             }
-            
             else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
                 //byte
@@ -211,6 +210,16 @@ namespace GennyMcGenFace.Parsers
             {
                 //object
                 return "new Object()";
+            }
+            else if (member.AsString == "sbyte")
+            {
+                //sbyte
+                return StaticRandom.Instance.Next(-128,127).ToString();
+            }
+            else if (member.AsString == "ushort")  //no, YOU'RE SHORT!
+            {
+                //ushort
+                return StaticRandom.Instance.Next(65535).ToString();
             }
             else
             {
@@ -231,11 +240,6 @@ namespace GennyMcGenFace.Parsers
                     if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                     {
                         AddNameSpace(param.Type.CodeType.Namespace);
-                    }
-
-                    if (param.IsCodeType == false)
-                    {
-                        var tmp = "crap";
                     }
 
                     if (param.Type.CodeType.Bases.Cast<CodeClass>().Any(item => item.FullName == "System.Data.Entity.DbContext"))
@@ -404,21 +408,23 @@ namespace GennyMcGenFace.Parsers
                 //typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? "";
                 typeNameAsInCode = typeNameAsInCode.Split('<', '>').ElementAtOrDefault(1) ?? typeNameAsInCode;
 
-                CodeModel projCodeModel;
-
                 try
                 {
-                    projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                    CodeModel projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                    if (projCodeModel == null) return member;
+
+                    var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+                    if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
+                    return member;
                 }
                 catch (COMException ex)
                 {
-                    projCodeModel = GetActiveProject().CodeModel;
+                    var found = CheckForTypeInOtherPlaces(typeNameAsInCode);
+                    if (found != null) return found;
                 }
 
-                var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
-
-                if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
-                return member;
+                return null;
             }
             catch (Exception ex)
             {
@@ -438,26 +444,77 @@ namespace GennyMcGenFace.Parsers
 
                 var typeNameAsInCode = DTEHelper.RemoveTaskFromString(codeTypeRef2.AsFullName);
 
-                CodeModel projCodeModel;
-
                 try
                 {
-                    projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                    CodeModel projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
+                    if (projCodeModel == null) return member;
+
+                    var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+                    if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
+                    return member;
                 }
                 catch (COMException ex)
                 {
-                    projCodeModel = GetActiveProject().CodeModel;
+                    var found = CheckForTypeInOtherPlaces(typeNameAsInCode);
+                    if (found != null) return found;
                 }
 
-                var codeType = projCodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
-
-                if (codeType != null) return projCodeModel.CreateCodeTypeRef(codeType);
-                return member;
+                return null;
             }
             catch (Exception ex)
             {
                 return member;
             }
+        }
+
+        public CodeTypeRef CheckForTypeInOtherPlaces(string typeNameAsInCode)
+        {
+            var found1 = CheckForTypeInActiveProject(typeNameAsInCode);
+            if (found1 != null) return found1;
+            var found2 = CheckForTypeInAllProjects(typeNameAsInCode);
+            if (found2 != null) return found2;
+            return null;
+        }
+
+        public CodeTypeRef CheckForTypeInActiveProject(string typeNameAsInCode)
+        {
+            try
+            {
+                Array activeProjs = _dte.ActiveSolutionProjects as Array;
+
+                if (activeProjs != null && activeProjs.Length > 0)
+                {
+                    var activeProj = activeProjs.GetValue(0) as Project;
+                    if (activeProj != null)
+                    {
+                        var codeType = activeProj.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+                        if (codeType != null) return activeProj.CodeModel.CreateCodeTypeRef(codeType);
+                    }
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        public CodeTypeRef CheckForTypeInAllProjects(string typeNameAsInCode)
+        {
+            //lol check in all projects
+            foreach (Project proj in _dte.Solution.Projects)
+            {
+                try
+                {
+                    var codeType = proj.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+                    if (codeType != null)
+                    {
+                        return proj.CodeModel.CreateCodeTypeRef(codeType);
+                    }
+                }
+                catch { }
+            }
+            return null;
         }
 
         private static string TryToGuessFullName(string typeName)
@@ -476,23 +533,6 @@ namespace GennyMcGenFace.Parsers
                 return true;
 
             return false;
-        }
-
-        public Project GetActiveProject()
-        {
-            try
-            {
-                Array activeSolutionProjects = _dte.ActiveSolutionProjects as Array;
-
-                if (activeSolutionProjects != null && activeSolutionProjects.Length > 0)
-                    return activeSolutionProjects.GetValue(0) as Project;
-            }
-            catch (Exception ex)
-            {
-                // Logger.Log("Error getting the active project" + ex);
-            }
-
-            return null;
         }
 
         private CodeTypeRef RemoveNullable(CodeTypeRef member)

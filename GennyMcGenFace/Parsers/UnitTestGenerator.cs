@@ -134,17 +134,26 @@ namespace GennyMcGenFace.Parsers
         {
             var frmtStr = Spacing.Get(2) + "private {0} {1};\r\n";
             var str = string.Empty;
+            var substitutes = string.Empty;
             foreach (var className in _parts.PrivateClassesAtTop)
             {
                 var privClassName = DTEHelper.GenPrivateClassNameAtTop(className);
                 str += string.Format(frmtStr, className, privClassName);
-                _parts.InitCode = string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className) + _parts.InitCode;
+               // _parts.InitCode = string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className) + _parts.InitCode;
+                substitutes += string.Format("{0}{1} = Substitute.For<{2}>();\r\n", Spacing.Get(3), privClassName, className);
             }
+
+            if (string.IsNullOrWhiteSpace(substitutes) == false) substitutes += "\r\n";
+
+            _parts.InitCode = substitutes + _parts.InitCode;
+
 
             if (_parts.HasConstructor || _parts.IsStaticClass == false)
             {
                 str += string.Format(frmtStr, _parts.SelectedClass.Name, "_testTarget");
             }
+
+      
 
             return str;
         }

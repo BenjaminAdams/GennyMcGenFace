@@ -25,7 +25,7 @@ namespace GennyMcGenFace.UI
 
             _editor.Left = 50;
             _editor.Top = 90;
-            _editor.Width = 800;
+            _editor.Width = 900;
             _editor.Height = 600;
 
             _mainForm.Shown += GenerateEditorTxt;
@@ -39,7 +39,8 @@ namespace GennyMcGenFace.UI
 
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) throw new Exception("Class not found");
-
+            _editor.Text = "Loading...";
+      
             var genner = new UnitTestGenerator(selectedClass, _dte);
             _editor.Text = genner.Gen(selectedClass, _opts);
         }

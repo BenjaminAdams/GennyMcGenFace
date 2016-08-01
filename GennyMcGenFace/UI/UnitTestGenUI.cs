@@ -51,6 +51,9 @@ Welcome, Please select a class.
         {
             DisableUIStuff();
             var promptValue1 = _classNameCombo1.Text;
+
+            _classNameCombo1.DroppedDown = false;
+
             if (string.IsNullOrWhiteSpace(promptValue1)) ShowError("Class name blank");
 
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);

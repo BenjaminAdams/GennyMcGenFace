@@ -462,6 +462,9 @@ namespace GennyMcGenFace.Parsers
 
                     // var tmp = member.CodeType.ProjectItem;
 
+                   // var tmp = member.CodeType.ProjectItem.FileCodeModel;
+                  //  var tmp1 = member.CodeType.ProjectItem.FileCodeModel.CodeElements;
+
                     CodeModel projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
                     // CodeModel projCodeModel = ((CodeClass)member.CodeType).ProjectItem.ContainingProject.CodeModel;
                     // CodeModel projCodeModel = member.CodeType.ProjectItem.ContainingProject.CodeModel;

@@ -22,8 +22,10 @@ You have the option to change how many words go into string and how big the rand
 
 The generated tests will need Nsubstitute nuget package if interfaces are used.
 
-Install-Package NSubstitute
-
-
+> Install-Package NSubstitute
 
 GennyMcGenFace's goal is not to generate 100% of the unit test, but to automate as much as possible.
+
+Download at the [Visual Studio Gallery](https://visualstudiogallery.msdn.microsoft.com/7079720a-e403-4322-9842-d44673776664)
+
+

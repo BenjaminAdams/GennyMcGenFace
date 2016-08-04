@@ -1,10 +1,12 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using FastColoredTextBoxNS;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using StatusBar = GennyMcGenFace.UI.StatusBar;
+using System.Threading.Tasks;
+using Task = System.Threading.Tasks.Task;
 
 namespace GennyMcGenFace.Parsers
 {
@@ -13,51 +15,57 @@ namespace GennyMcGenFace.Parsers
     /// </summary>
     public static class CodeDiscoverer
     {
+        //public static async Task<List<CodeClass>> ClassSearchAsync(EnvDTE.Projects projects, FastColoredTextBox editor, bool withProperties)
+        //{
+        //    return await Task.Run(() =>
+        //    {
+        //        return ClassSearch(projects, editor, withProperties);
+        //    });
+        //}
+
         //loads all classes in solution
-        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, StatusBar statusBar, bool withProperties)
+        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, FastColoredTextBox editor, bool withProperties)
         {
             var projs = CodeDiscoverer.Projects();
             var foundClasses = new List<CodeClass>();
 
-            var i = 0;
+            editor.Text = "Loading projects\r\n";
+
             foreach (var proj in projs)
             {
-                i++;
                 if (proj == null) continue;
-                statusBar.Progress("Loading Classes for Project: " + proj.Name, i, projs.Count);
+                editor.AppendText("\r\n" + proj.Name);
 
                 if (proj.ProjectItems == null || proj.CodeModel == null) continue;
 
                 var projectItems = GetProjectItems(proj.ProjectItems).Where(v => v.Name.Contains(".cs"));
 
-                foreach (var c in projectItems)
+                Parallel.ForEach(projectItems, (c) =>
                 {
                     var eles = c.FileCodeModel;
-                    if (eles == null) continue;
+                    if (eles == null) return;
 
                     foreach (var ns in eles.CodeElements.OfType<CodeNamespace>())
                     {
                         foreach (var member in ns.Members.OfType<CodeClass>())
                         {
-                            if (member == null || member.Kind != vsCMElement.vsCMElementClass)
-                                continue;
+                            if (member == null || member.Kind != vsCMElement.vsCMElementClass) continue;
 
-                            if (withProperties == true && HasOnePublicProperty(member))
+                            if (HasOneFunction(member))
                             {
                                 foundClasses.Add(member);
                             }
-                            else if (withProperties == false && HasOneFunction(member))
-                            {
-                                foundClasses.Add(member);
-                            }
+                            //else if (withProperties == true && HasOnePublicProperty(member))
+                            //{
+                            //    foundClasses.Add(member);
+                            //}
                         }
                     }
-                }
+                });
             }
 
             if (foundClasses == null || foundClasses.Count == 0) throw new Exception("Could not find any classes");
             foundClasses.Sort((x, y) => x.FullName.CompareTo(y.FullName));
-            statusBar.End();
             return foundClasses;
         }
 
@@ -67,19 +75,12 @@ namespace GennyMcGenFace.Parsers
             {
                 var asProp = member as CodeProperty;
 
-
-
-
                 if (asProp != null && member.Kind == vsCMElement.vsCMElementProperty && asProp.Setter != null && asProp.Access == vsCMAccess.vsCMAccessPublic && asProp.Setter.Access == vsCMAccess.vsCMAccessPublic)
                 {
-                 
-
                     // var sttr = asProp.Setter as CodeFunction;
-                  //  var start = (TextPoint) sttr.GetStartPoint();
-                   // var finish = (TextPoint) sttr.GetEndPoint();
-                  //  var src = start.CreateEditPoint().GetText(finish);
-
-
+                    //  var start = (TextPoint) sttr.GetStartPoint();
+                    // var finish = (TextPoint) sttr.GetEndPoint();
+                    //  var src = start.CreateEditPoint().GetText(finish);
 
                     return true;
                 }

@@ -13,37 +13,23 @@ namespace GennyMcGenFace.UI
     public class UnitTestGenUI : BaseUI
     {
         private DTE2 _dte;
+        protected List<CodeClass> _classes;
 
-        public UnitTestGenUI(List<CodeClass> classes, DTE2 dte)
+        public UnitTestGenUI(DTE2 dte)
         {
-            base.Init(classes);
-
-            _dte = dte;
-
-            _mainForm.Text = "Generate Unit Test for a Class";
-            InitTopRightControls();
-            InitCombo1();
-
             _editor.Left = 50;
             _editor.Top = 90;
             _editor.Width = 900;
             _editor.Height = 600;
+            _dte = dte;
+            base.Init();
 
-            // _mainForm.Shown += GenerateEditorTxt;
-            _editor.Text = @"╔╦╦╦╦╦╦╦╦╦╦╦╦╗
-╠╬╬╬╬╬╬╬╬╬╬╬╬╣
-╠╬╬╬╬╬╬╬╬╬╬╬╬╣
-╠╬╬█╬╬╬╬╬╬█╬╬╣
-╠╬╬╬╬╬╬╬╬╬╬╬╬╣
-╠╬╬╬╬╬╬╬╬╬╬╬╬╣
-╠╬█╬╬╬╬╬╬╬╬█╬╣
-╠╬██████████╬╣
-╠╬╬╬╬╬╬╬╬╬╬╬╬╣
-╚╩╩╩╩╩╩╩╩╩╩╩╩╝
+            InitTopRightControls();
+            ShowLoadingCombo();
+            // _mainForm.Text = "Generate Unit Test for a Class";
 
-Welcome, Please select a class.
+            _mainForm.Shown += LoadClasses;
 
-";
             _mainForm.ShowDialog();
         }
 
@@ -58,7 +44,7 @@ Welcome, Please select a class.
 
             var selectedClass = _classes.FirstOrDefault(x => x.FullName == promptValue1);
             if (selectedClass == null) ShowError("Class not found");
-            // _editor.Text = "Loading...\r\n";
+
             _editor.Text = @"        . . . . o o o o o
                _____      o       ____________
       ____====  ]OO|_n_n__][.     |Generating|
@@ -74,6 +60,53 @@ Welcome, Please select a class.
             EnableUIStuff();
         }
 
+        private void LoadClasses(object sender, EventArgs e)
+        {
+            DisableUIStuff();
+            var worker = new System.ComponentModel.BackgroundWorker();
+
+            worker.DoWork += LoadClassBackground;
+            worker.RunWorkerCompleted += LoadClassDone;
+
+            worker.RunWorkerAsync();
+        }
+
+        private void LoadClassBackground(object sender, EventArgs e)
+        {
+            _classes = CodeDiscoverer.ClassSearch(_dte.Solution.Projects, _editor, false);
+
+            _dataSource = BuildAutoCompleteSource();
+        }
+
+        private void LoadClassDone(object sender, EventArgs e)
+        {
+            if (_classes == null || _classes.Any() == false)
+            {
+                _editor.Text = "Could not find any projects, do you have a solution open?";
+                return;
+            }
+
+            EnableUIStuff();
+            _mainForm.Controls.Remove(_loadingMsgCombo);
+            InitCombo1();
+
+            _editor.Text = @"╔╦╦╦╦╦╦╦╦╦╦╦╦╗
+╠╬╬╬╬╬╬╬╬╬╬╬╬╣
+╠╬╬╬╬╬╬╬╬╬╬╬╬╣
+╠╬╬█╬╬╬╬╬╬█╬╬╣
+╠╬╬╬╬╬╬╬╬╬╬╬╬╣
+╠╬╬╬╬╬╬╬╬╬╬╬╬╣
+╠╬█╬╬╬╬╬╬╬╬█╬╣
+╠╬██████████╬╣
+╠╬╬╬╬╬╬╬╬╬╬╬╬╣
+╚╩╩╩╩╩╩╩╩╩╩╩╩╝
+
+Welcome, Please select a class.
+";
+            // _classNameCombo1.DroppedDown = false; //The dropdown was open for some reason
+            // _classNameCombo1.Focus();
+        }
+
         private void EnableUIStuff()
         {
             _wordsTxt.ReadOnly = false;
@@ -81,7 +114,10 @@ Welcome, Please select a class.
             _wordsTxt.Enabled = true;
             _intLengthTxt.Enabled = true;
 
-            _classNameCombo1.Enabled = true;
+            if (_classNameCombo1 != null)
+            {
+                _classNameCombo1.Enabled = true;
+            }
         }
 
         private void DisableUIStuff()
@@ -91,13 +127,45 @@ Welcome, Please select a class.
             _wordsTxt.Enabled = false;
             _intLengthTxt.Enabled = false;
 
-            _classNameCombo1.Enabled = false;
+            if (_classNameCombo1 != null)
+            {
+                _classNameCombo1.Enabled = false;
+            }
         }
 
         private void ShowError(string msg)
         {
             EnableUIStuff();
             throw new Exception(msg);
+        }
+
+        protected AutoCompleteStringCollection BuildAutoCompleteSource()
+        {
+            var classList = new AutoCompleteStringCollection();
+            //Parallel.ForEach(_classes, (t) =>
+            //{
+            //    classList.Add(t.FullName);
+            //});
+            foreach (var t in _classes)
+            {
+                classList.Add(t.FullName);
+            }
+
+            return classList;
+        }
+
+        protected void ShowLoadingCombo()
+        {
+            _loadingMsgCombo = new ComboListMatcher
+            {
+                Left = 50,
+                Top = 50,
+                Width = 900,
+                DroppedDown = false,
+                DataSource = new AutoCompleteStringCollection() { "Loading..." }
+            };
+
+            _mainForm.Controls.Add(_loadingMsgCombo);
         }
     }
 }

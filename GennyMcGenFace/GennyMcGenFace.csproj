@@ -155,7 +155,6 @@
     <Compile Include="PkgCmdID.cs" />
     <Compile Include="Parsers\CodeDiscoverer.cs" />
     <Compile Include="Helpers\StaticRandom.cs" />
-    <Compile Include="UI\StatusBar.cs" />
     <Compile Include="Helpers\Words.cs" />
     <Compile Include="UI\UnitTestGenUI.cs" />
   </ItemGroup>

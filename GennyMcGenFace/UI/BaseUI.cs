@@ -12,7 +12,6 @@ namespace GennyMcGenFace.UI
 {
     public class BaseUI
     {
-        protected List<CodeClass> _classes;
         protected static GenOptions _opts = new GenOptions();
         protected Form _mainForm;
         protected FastColoredTextBox _editor = new FastColoredTextBox();
@@ -20,20 +19,12 @@ namespace GennyMcGenFace.UI
         protected NumericUpDown _wordsTxt;
         protected NumericUpDown _intLengthTxt;
 
-        protected ComboBox _classNameCombo1 = new ComboListMatcher
-        {
-            Left = 50,
-            Top = 50,
-            Width = 900,
-            AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-            AutoCompleteSource = AutoCompleteSource.CustomSource
-        };
+        protected ComboListMatcher _classNameCombo1;
+        protected ComboListMatcher _loadingMsgCombo;
 
-        protected void Init(List<CodeClass> classes)
+        protected void Init()
         {
-            _classes = classes;
             _editor.Language = Language.CSharp;
-            _dataSource = BuildAutoCompleteSource();
 
             _mainForm = new Form()
             {
@@ -45,17 +36,6 @@ namespace GennyMcGenFace.UI
             };
 
             _mainForm.Controls.Add(_editor);
-        }
-
-        protected AutoCompleteStringCollection BuildAutoCompleteSource()
-        {
-            var classList = new AutoCompleteStringCollection();
-            foreach (var t in _classes)
-            {
-                classList.Add(t.FullName);
-            }
-
-            return classList;
         }
 
         protected void InitTopRightControls()
@@ -98,11 +78,24 @@ namespace GennyMcGenFace.UI
 
         protected void InitCombo1()
         {
-            _classNameCombo1.AutoCompleteCustomSource = _dataSource;
-            _classNameCombo1.DataSource = _dataSource;
+            _classNameCombo1 = new ComboListMatcher
+            {
+                Left = 50,
+                Top = 50,
+                Width = 900,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.CustomSource,
+                DroppedDown = false,
+                DataSource = _dataSource,
+                AutoCompleteCustomSource = _dataSource
+            };
+
             _mainForm.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
             _mainForm.Controls.Add(_classNameCombo1);
             //_classNameCombo1.SelectionChangeCommitted += GenerateEditorTxt;
+            //_classNameCombo1.AutoCompleteCustomSource = _dataSource;
+            // _classNameCombo1.DataSource = _dataSource;
+
             _classNameCombo1.SelectedIndexChanged += GenerateEditorTxt;
         }
 

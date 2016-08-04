@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
-using StatusBar = GennyMcGenFace.UI.StatusBar;
 
 namespace GennyMcGenFace
 {
@@ -63,10 +62,8 @@ namespace GennyMcGenFace
         {
             //   var dte = GetService(typeof(SDTE)) as DTE2;
             if (_dte == null) throw new Exception("Could not load plugin");
-            var statusBar = new StatusBar((IVsStatusbar)GetService(typeof(SVsStatusbar)));
-            var foundClasses = CodeDiscoverer.ClassSearch(_dte.Solution.Projects, statusBar, false);
 
-            var ui = new UnitTestGenUI(foundClasses, _dte);
+            var ui = new UnitTestGenUI(_dte);
         }
     }
 }

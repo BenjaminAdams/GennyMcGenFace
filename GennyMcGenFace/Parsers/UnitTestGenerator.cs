@@ -112,7 +112,7 @@ namespace GennyMcGenFace.Parsers
         private void GenerateConstructor(CodeFunction member)
         {
             _parts.HasConstructor = true;
-            var paramsStr = _genner.GenerateFunctionParamValues(member);
+            var paramsStr = _genner.GenerateFunctionParamValues(member, false);
 
             _parts.InitCode += string.Format("{0}_testTarget = new {1}({2});\r\n", Spacing.Get(3), member.Name, paramsStr);
         }
@@ -128,14 +128,25 @@ namespace GennyMcGenFace.Parsers
         {
             if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
             var strInputs = "";
+            var paramCount = 0;
+
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
+                paramCount++;
                 if (param.Type.AsString == "System.Guid" || param.Type.AsString == "System.DateTime" || param.Type.CodeType.Kind == vsCMElement.vsCMElementEnum) continue;
 
                 if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
                 {
                     //get an input object for the class input
-                    strInputs += string.Format("{0}var {1}Input = {2}();\r\n", Spacing.Get(3), param.Name, _genner.GenerateFunctionParamForClassInput(param.Name, param.Type.AsFullName, param.Type));
+                    var setValue = _genner.GenerateFunctionParamForClassInput(param.Type);
+                    if (setValue != null)
+                    {
+                        strInputs += string.Format("{0}var param{1} = {2}();\r\n", Spacing.Get(3), paramCount, setValue);
+                    }
+                    else
+                    {
+                        strInputs += string.Format("{0}dynamic param{1} = new {{}};//Could not generate param{1} \r\n", Spacing.Get(3), paramCount);
+                    }
                 }
             }
 
@@ -207,6 +218,7 @@ namespace GennyMcGenFace.Parsers
 
                         var memberNoTask = _genner.StripGenerics(member.Type);
 
+                        if (memberNoTask == null) throw new Exception("Could not strip generic");
                         if (memberNoTask.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || memberNoTask.AsFullName == "System.Threading.Tasks.Task")
                         {
                             continue; //no need to mock return type for Void functions
@@ -216,14 +228,32 @@ namespace GennyMcGenFace.Parsers
 
                         if (memberNoTask.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (memberNoTask.AsString != "System.Guid" && memberNoTask.AsString != "System.DateTime" && memberNoTask.CodeType.Kind != vsCMElement.vsCMElementEnum))
                         {
-                            _genner.GenerateFunctionParamForClassInput(memberNoTask.CodeType.Name, memberNoTask.CodeType.FullName, memberNoTask);
+                            _genner.GenerateFunctionParamForClassInput(memberNoTask);
                             ////_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
-                            returnType = _parts.GetParamFunctionName(memberNoTask.CodeType.FullName) + "()";
+                            //returnType = _parts.GetParamFunctionName(memberNoTask.CodeType.FullName) + "()";
+                            returnType = _parts.GetParamFunctionName(memberNoTask.CodeType.FullName);
+                            if (returnType == null)
+                            {
+                                returnType = "new {}";
+                            }
+                            else
+                            {
+                                returnType += "()";
+                            }
+
+
+
                         }
                         else
                         {
                             returnType = _genner.GetParamValue(memberNoTask, "", 0);
                         }
+
+                        //if (returnType == "GetList()")
+                        //{
+                        //    var tmp5 = 5;
+                        //}
+
 
                         if (isAsync)
                         {
@@ -234,7 +264,7 @@ namespace GennyMcGenFace.Parsers
                     }
                     catch (Exception ex)
                     {
-                        str += string.Format("{0}//Could not generate {1}; //You might need to rebuild your solution\r\n", Spacing.Get(3), member.Name);
+                        str += string.Format("{0}//Could not generate {1}.{2}; \r\n", Spacing.Get(3), face.Name, member.Name);
                     }
                 }
             }
@@ -290,7 +320,7 @@ namespace GennyMcGenFace.Parsers
 
                 var baseType = _genner.TryToGuessGenericArgument(member.Type);
 
-                var paramsStr = _genner.GenerateFunctionParamValues(member);
+                var paramsStr = _genner.GenerateFunctionParamValues(member, true);
 
                 var returnsValCode = "var res = ";
                 var testReturnType = "void";

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Task = System.Threading.Tasks.Task;
 
 namespace GennyMcGenFace.Parsers
 {
@@ -15,15 +14,13 @@ namespace GennyMcGenFace.Parsers
     /// </summary>
     public static class CodeDiscoverer
     {
-        //public static async Task<List<CodeClass>> ClassSearchAsync(EnvDTE.Projects projects, FastColoredTextBox editor, bool withProperties)
-        //{
-        //    return await Task.Run(() =>
-        //    {
-        //        return ClassSearch(projects, editor, withProperties);
-        //    });
-        //}
-
-        //loads all classes in solution
+        /// <summary>
+        /// loads all classes in solution
+        /// </summary>
+        /// <param name="projects">All projects in the solution</param>
+        /// <param name="editor">The textbox to display progress</param>
+        /// <param name="withProperties">True if you only want classes with properties only.  False if you want classes with Functions</param>
+        /// <returns></returns>
         public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, FastColoredTextBox editor, bool withProperties)
         {
             var projs = CodeDiscoverer.Projects();
@@ -55,10 +52,10 @@ namespace GennyMcGenFace.Parsers
                             {
                                 foundClasses.Add(member);
                             }
-                            //else if (withProperties == true && HasOnePublicProperty(member))
-                            //{
-                            //    foundClasses.Add(member);
-                            //}
+                            else if (withProperties == true && HasOnePublicProperty(member))
+                            {
+                                foundClasses.Add(member);
+                            }
                         }
                     }
                 });

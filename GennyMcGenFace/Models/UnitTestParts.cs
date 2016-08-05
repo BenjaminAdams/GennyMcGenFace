@@ -43,7 +43,7 @@ namespace GennyMcGenFace.Models
         public string GetParamFunctionName(string functionName)
         {
             var found = ParamsGenerated.FirstOrDefault(x => x.FullName == functionName);
-            if (found == null) return "Not Found";
+            if (found == null) return null;
             return found.GetFunctionName;
         }
     }

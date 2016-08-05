@@ -142,12 +142,9 @@ Welcome, Please select a class.
         protected AutoCompleteStringCollection BuildAutoCompleteSource()
         {
             var classList = new AutoCompleteStringCollection();
-            //Parallel.ForEach(_classes, (t) =>
-            //{
-            //    classList.Add(t.FullName);
-            //});
-            foreach (var t in _classes)
+            for (var i = 0; i < _classes.Count; i++)
             {
+                var t = _classes[i];
                 classList.Add(t.FullName);
             }
 
@@ -162,6 +159,7 @@ Welcome, Please select a class.
                 Top = 50,
                 Width = 900,
                 DroppedDown = false,
+                Enabled = false,
                 DataSource = new AutoCompleteStringCollection() { "Loading..." }
             };
 

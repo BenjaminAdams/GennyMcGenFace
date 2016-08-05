@@ -154,7 +154,7 @@ namespace GennyMcGenFace.Parsers
                     var constructor = member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
                     if (constructor != null && constructor.Kind == vsCMElement.vsCMElementFunction)
                     {
-                        paramsInConstructorStr = GenerateFunctionParamValues(constructor);
+                        paramsInConstructorStr = GenerateFunctionParamValues(constructor, false);
                     }
                 }
 
@@ -228,15 +228,16 @@ namespace GennyMcGenFace.Parsers
             }
         }
 
-        public string GenerateFunctionParamValues(CodeFunction member)
+        public string GenerateFunctionParamValues(CodeFunction member, bool paramsDefinedB4Input)
         {
             if (member.Parameters == null || member.Parameters.OfType<CodeParameter>().Any() == false) return string.Empty;
             var paramsStr = "";
-
+            var paramCount = 0;
             foreach (CodeParameter param in member.Parameters.OfType<CodeParameter>())
             {
                 try
                 {
+                    paramCount++;
                     if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                     {
                         AddNameSpace(param.Type.CodeType.Namespace);
@@ -257,9 +258,16 @@ namespace GennyMcGenFace.Parsers
                         //functions
                         //if the param is a CodeClass we can create an input object for it
 
-                        var functionName = GenerateFunctionParamForClassInput(param.Type.CodeType.Name, param.Type.AsFullName, param.Type);
-                        // paramsStr += string.Format("{0}Input, ", param.Name);
-                        paramsStr += string.Format("{0}(), ", functionName);
+                        var functionName = GenerateFunctionParamForClassInput(param.Type);
+
+                        if (paramsDefinedB4Input)
+                        {
+                            paramsStr += string.Format("param{0}, ", paramCount);
+                        }
+                        else
+                        {
+                            paramsStr += string.Format("{0}(), ", functionName);
+                        }
                     }
                     else
                     {
@@ -287,32 +295,29 @@ namespace GennyMcGenFace.Parsers
             return DTEHelper.GenPrivateClassNameAtTop(codeInterface.Name);
         }
 
-        public string GenerateFunctionParamForClassInput(string name, string fullName, CodeTypeRef codeTypeRef)
+        public string GenerateFunctionParamForClassInput(CodeTypeRef codeTypeRef)
         {
             codeTypeRef = StripGenerics(codeTypeRef);
 
-            fullName = codeTypeRef.AsFullName.Replace("?", "");
-            name = codeTypeRef.CodeType.Name.Replace("?", "");
-
-            var fullNameToUseAsReturnType = fullName;
+            var fullName = codeTypeRef.AsFullName.Replace("?", "");
+            var name = codeTypeRef.CodeType.Name.Replace("?", "");
 
             if (ClassGenerator.IsCodeTypeAList(name))
             {
                 var baseType = TryToGuessGenericArgument(codeTypeRef);
-                // fullNameToUseAsReturnType = string.Format("{0}<{1}>", name, codeTypeRef.CodeType.Name);
-                name = baseType == null ? "//Couldnt get list type name" : baseType.CodeType.Name + "List";
+                if (baseType == null) return null;
+                name = baseType.CodeType.Name + "List";
             }
-            //else if (name == "Task")
-            //{
-            //    var baseType = TryToGuessGenericArgument(codeTypeRef);
-            //    name = baseType == null ? "//Couldnt get type from Task" : baseType.CodeType.Name;
-            //    fullNameToUseAsReturnType = DTEHelper.RemoveTaskFromString(fullNameToUseAsReturnType);
-            //}
 
             var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
             if (exists != null) return exists.GetFunctionName; //do not add a 2nd one
 
             var functionName = string.Format("Get{0}", name);
+
+            if (functionName == "GetList")
+            {
+                var asdasdsad = 55;
+            }
 
             //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
             _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = fullName, GetFunctionName = functionName });
@@ -331,7 +336,7 @@ namespace GennyMcGenFace.Parsers
         private static {0} {1}() {{
             return {2};
         }}
-        ", fullNameToUseAsReturnType, functionName, innerCode);
+        ", fullName, functionName, innerCode);
 
             _parts.ParamInputs += gen;
             return functionName;
@@ -462,8 +467,8 @@ namespace GennyMcGenFace.Parsers
 
                     // var tmp = member.CodeType.ProjectItem;
 
-                   // var tmp = member.CodeType.ProjectItem.FileCodeModel;
-                  //  var tmp1 = member.CodeType.ProjectItem.FileCodeModel.CodeElements;
+                    // var tmp = member.CodeType.ProjectItem.FileCodeModel;
+                    //  var tmp1 = member.CodeType.ProjectItem.FileCodeModel.CodeElements;
 
                     CodeModel projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
                     // CodeModel projCodeModel = ((CodeClass)member.CodeType).ProjectItem.ContainingProject.CodeModel;

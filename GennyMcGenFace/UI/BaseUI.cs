@@ -66,6 +66,7 @@ namespace GennyMcGenFace.UI
 
             var wordsLbl = new Label() { Left = 815, Top = 17, AutoSize = true, Text = "Words in strings" };
             var intLengthLbl = new Label() { Left = 680, Top = 17, AutoSize = true, Text = "Number size" };
+            _mainForm.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
 
             _mainForm.Controls.Add(intLengthLbl);
             _mainForm.Controls.Add(wordsLbl);
@@ -90,7 +91,6 @@ namespace GennyMcGenFace.UI
                 AutoCompleteCustomSource = _dataSource
             };
 
-            _mainForm.Controls.Add(new Label() { Left = 50, Top = 25, Text = "ClassName" });
             _mainForm.Controls.Add(_classNameCombo1);
             //_classNameCombo1.SelectionChangeCommitted += GenerateEditorTxt;
             //_classNameCombo1.AutoCompleteCustomSource = _dataSource;

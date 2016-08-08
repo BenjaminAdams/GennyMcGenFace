@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace GennyMcGenFace.Parsers
 {
@@ -472,12 +473,15 @@ namespace GennyMcGenFace.Parsers
 
                 try
                 {
-                    //var tmp = member.Parent.ProjectItem.ContainingProject.CodeModel;
+                    var found = CheckEnvDte(typeNameAsInCode);
 
+                    //var tmp = member.Parent.ProjectItem.ContainingProject.CodeModel;
                     // var tmp = member.CodeType.ProjectItem;
 
                     // var tmp = member.CodeType.ProjectItem.FileCodeModel;
                     //  var tmp1 = member.CodeType.ProjectItem.FileCodeModel.CodeElements;
+
+                    // var tmpp = member.CodeType.Namespace.ProjectItem.ContainingProject.CodeModel;
 
                     CodeModel projCodeModel = ((CodeElement)member.Parent).ProjectItem.ContainingProject.CodeModel;
                     // CodeModel projCodeModel = ((CodeClass)member.CodeType).ProjectItem.ContainingProject.CodeModel;
@@ -554,6 +558,219 @@ namespace GennyMcGenFace.Parsers
                 catch { }
             }
             return null;
+        }
+
+        public IList<Project> Projects()
+        {
+            Projects projects = _dte.Solution.Projects;
+            List<Project> list = new List<Project>();
+            var item = projects.GetEnumerator();
+            while (item.MoveNext())
+            {
+                var project = item.Current as Project;
+                if (project == null)
+                {
+                    continue;
+                }
+
+                if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder)
+                {
+                    list.AddRange(GetSolutionFolderProjects(project));
+                }
+                else
+                {
+                    list.Add(project);
+                }
+            }
+
+            return list;
+        }
+
+        private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
+        {
+            List<Project> list = new List<Project>();
+            for (var i = 1; i <= solutionFolder.ProjectItems.Count; i++)
+            {
+                var subProject = solutionFolder.ProjectItems.Item(i).SubProject;
+                if (subProject == null)
+                {
+                    continue;
+                }
+
+                // If this is another solution folder, do a recursive call, otherwise add
+                if (subProject.Kind == ProjectKinds.vsProjectKindSolutionFolder)
+                {
+                    list.AddRange(GetSolutionFolderProjects(subProject));
+                }
+                else
+                {
+                    list.Add(subProject);
+                }
+            }
+            return list;
+        }
+
+        public CodeTypeRef CheckEnvDte(string typeNameAsInCode)
+        {
+            //lol check in all projects
+
+            foreach (Project projFolders in Projects())
+            {
+                try
+                {
+
+                    var codeType = projFolders.CodeModel.CodeTypeFromFullName(TryToGuessFullName(typeNameAsInCode));
+
+                    if (codeType != null)
+                    {
+                        return projFolders.CodeModel.CreateCodeTypeRef(codeType);
+                    }
+
+                    var projs = CodeDiscoverer.GetProjectItems(projFolders.ProjectItems).Where(v => v.Name.Contains(".cs"));
+
+                   // foreach (var proj in projs)
+                   // {
+                      //  if (proj.Name == "PayPal")
+                      //  {
+                      //      var asd = 5;
+                      //  }
+
+                     //   if (proj.ContainingProject.CodeModel == null) continue;
+
+
+                      
+
+                       // var codeType = CheckEnvDte22(typeNameAsInCode, proj.ContainingProject);
+
+                      //  if (codeType != null)
+                      //  {
+                      //      return proj.ContainingProject.CodeModel.CreateCodeTypeRef(codeType);
+                      //  }
+                   // }
+
+                }
+                catch { }
+            }
+            return null;
+        }
+
+        private CodeType CheckEnvDte22(string typeNameAsInCode, Project activeProject)
+        {
+            //var solution = (Solution2)_dte.Solution;
+            //var projects = solution.Projects;
+            //var activeProject = projects
+            //    .OfType<Project>()
+            //    .First();
+
+            // locate my class.
+            var myClass = GetAllCodeElementsOfType(
+                activeProject.CodeModel.CodeElements,
+                vsCMElement.vsCMElementClass, true)
+                .OfType<CodeClass2>()
+                .First(x => x.Name == typeNameAsInCode);
+            //   .First(x => x.Name == "Program");
+            //  .First(x => x.Name == "Payments.Productization.Provider.PayPal.PaypalRef.GetTransactionDetailsResponseType");
+
+            // locate my attribute on class.
+            var mySpecialAttrib = myClass
+                .Attributes
+                .OfType<CodeAttribute2>()
+                .First();
+
+            var attributeArgument = mySpecialAttrib.Arguments
+                .OfType<CodeAttributeArgument>()
+                .First();
+
+            string myType = Regex.Replace(
+                attributeArgument.Value, // typeof(MyType)
+                "^typeof.*\\((.*)\\)$", "$1"); // MyType*/
+
+            var codeNamespace = myClass.Namespace;
+            var classNamespaces = new List<string>();
+
+            while (codeNamespace != null)
+            {
+                var codeNs = codeNamespace;
+                var namespaceName = codeNs.FullName;
+
+                var foundNamespaces = new List<string> { namespaceName };
+
+                // generate namespaces from usings.
+                var @usings = codeNs.Children
+                    .OfType<CodeImport>()
+                    .Select(x =>
+                        new[]
+            {
+                x.Namespace,
+                namespaceName + "." + x.Namespace
+            })
+                    .SelectMany(x => x)
+                    .ToList();
+
+                foundNamespaces.AddRange(@usings);
+
+                // prepend all namespaces:
+                var extra = (
+                    from ns2 in classNamespaces
+                    from ns1 in @usings
+                    select ns1 + "." + ns2)
+                    .ToList();
+
+                classNamespaces.AddRange(foundNamespaces);
+                classNamespaces.AddRange(extra);
+
+                codeNamespace = codeNs.Parent as CodeNamespace;
+                if (codeNamespace == null)
+                {
+                    var codeModel = codeNs.Parent as FileCodeModel2;
+                    if (codeModel == null) return null;
+
+                    var elems = codeModel.CodeElements;
+                    if (elems == null) continue;
+
+                    var @extraUsings = elems
+                        .OfType<CodeImport>()
+                        .Select(x => x.Namespace);
+
+                    classNamespaces.AddRange(@extraUsings);
+                }
+            }
+
+            // resolve to a type!
+            var typeLocator = new EnvDTETypeLocator();
+            var resolvedType = classNamespaces.Select(type => typeLocator.FindTypeExactMatch(activeProject, type + "." + myType)).FirstOrDefault(type => type != null);
+            return resolvedType;
+        }
+
+        public List<CodeElement> GetAllCodeElementsOfType(CodeElements elements, vsCMElement elementType, bool includeExternalTypes)
+        {
+            var ret = new List<CodeElement>();
+
+            foreach (CodeElement elem in elements)
+            {
+                // iterate all namespaces (even if they are external)
+                // > they might contain project code
+                if (elem.Kind == vsCMElement.vsCMElementNamespace)
+                {
+                    ret.AddRange(GetAllCodeElementsOfType(((CodeNamespace)elem).Members, elementType, includeExternalTypes));
+                }
+
+                // if its not a namespace but external
+                // > ignore it
+                else if (elem.InfoLocation == vsCMInfoLocation.vsCMInfoLocationExternal && !includeExternalTypes)
+                    continue;
+
+                // if its from the project
+                // > check its members
+                else if (elem.IsCodeType)
+                {
+                    ret.AddRange(GetAllCodeElementsOfType(((CodeType)elem).Members, elementType, includeExternalTypes));
+                }
+
+                if (elem.Kind == elementType)
+                    ret.Add(elem);
+            }
+            return ret;
         }
 
         private static string TryToGuessFullName(string typeName)

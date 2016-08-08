@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -26,7 +27,6 @@ namespace GennyMcGenFace.UI
 
             InitTopRightControls();
             ShowLoadingCombo();
-            // _mainForm.Text = "Generate Unit Test for a Class";
 
             _mainForm.Shown += LoadClasses;
 

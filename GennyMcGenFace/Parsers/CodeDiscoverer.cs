@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace GennyMcGenFace.Parsers
 {
+    //another way we could possible get all the classes https://github.com/PombeirP/T4Factories/blob/master/T4Factories.Testbed/CodeTemplates/VisualStudioAutomationHelper.ttinclude#L177
+
     /// <summary>
     /// Get information about the current project the extension is installed on
     /// </summary>

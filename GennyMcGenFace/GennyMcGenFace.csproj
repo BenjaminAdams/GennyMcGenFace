@@ -141,6 +141,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Guids.cs" />
+    <Compile Include="Parsers\EnvDTETypeLocator.cs" />
     <Compile Include="Parsers\UnitTestGenerator.cs" />
     <Compile Include="UI\BaseUI.cs" />
     <Compile Include="UI\ClassGenUI.cs" />

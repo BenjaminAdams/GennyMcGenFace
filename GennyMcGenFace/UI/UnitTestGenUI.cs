@@ -57,14 +57,15 @@ namespace GennyMcGenFace.UI
             var genner = new UnitTestGenerator(selectedClass, _dte, _editor);
 
             _editor.Text = await genner.Gen(selectedClass, _opts);
+
             EnableUIStuff();
         }
 
         private void LoadClasses(object sender, EventArgs e)
         {
             DisableUIStuff();
-            var worker = new System.ComponentModel.BackgroundWorker();
 
+            var worker = new System.ComponentModel.BackgroundWorker();
             worker.DoWork += LoadClassBackground;
             worker.RunWorkerCompleted += LoadClassDone;
 

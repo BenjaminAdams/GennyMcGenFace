@@ -20,6 +20,7 @@ namespace GennyMcGenFace.Parsers
         private ClassGenerator _genner;
         private DTE2 _dte;
         private FastColoredTextBox _editor;
+        private bool _debugMode = true;
 
         public UnitTestGenerator(CodeClass selectedClass, DTE2 dte, FastColoredTextBox editor)
         {
@@ -41,11 +42,19 @@ namespace GennyMcGenFace.Parsers
             _opts = opts;
             _genner = new ClassGenerator(_parts, _opts, _dte);
 
-            return await Task.Run(() =>
-             {
-                 ParseFunctions(selectedClass);
-                 return PutItAllTogether();
-             });
+            if (_debugMode == true)
+            {
+                ParseFunctions(selectedClass);
+                return PutItAllTogether();
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    ParseFunctions(selectedClass);
+                    return PutItAllTogether();
+                });
+            }
         }
 
         private void Log(string msg)
@@ -216,22 +225,22 @@ namespace GennyMcGenFace.Parsers
 
                         var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
 
-                        var memberNoTask = _genner.StripGenerics(member.Type);
+                        var strippedMember = _genner.StripGenerics(member.Type);
 
-                        if (memberNoTask == null) throw new Exception("Could not strip generic");
-                        if (memberNoTask.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || memberNoTask.AsFullName == "System.Threading.Tasks.Task")
+                        if (strippedMember == null) throw new Exception("Could not strip generic");
+                        if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || strippedMember.AsFullName == "System.Threading.Tasks.Task")
                         {
                             continue; //no need to mock return type for Void functions
                         }
 
                         Log(member.FullName + "\r\n");
 
-                        if (memberNoTask.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (memberNoTask.AsString != "System.Guid" && memberNoTask.AsString != "System.DateTime" && memberNoTask.CodeType.Kind != vsCMElement.vsCMElementEnum))
+                        if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (strippedMember.AsString != "System.Guid" && strippedMember.AsString != "System.DateTime" && strippedMember.CodeType.Kind != vsCMElement.vsCMElementEnum))
                         {
-                            _genner.GenerateFunctionParamForClassInput(memberNoTask);
+                            _genner.GenerateFunctionParamForClassInput(member.Type);
                             ////_genner.GenerateFunctionParamForClassInput(member.Type.CodeType.Name, member.Type.CodeType.FullName, member.Type); //make sure we have created this type so we can return it
                             //returnType = _parts.GetParamFunctionName(memberNoTask.CodeType.FullName) + "()";
-                            returnType = _parts.GetParamFunctionName(memberNoTask.CodeType.FullName);
+                            returnType = _parts.GetParamFunctionName(strippedMember.CodeType.FullName);
                             if (returnType == null)
                             {
                                 returnType = "new {}";
@@ -240,20 +249,16 @@ namespace GennyMcGenFace.Parsers
                             {
                                 returnType += "()";
                             }
-
-
-
                         }
                         else
                         {
-                            returnType = _genner.GetParamValue(memberNoTask, "", 0);
+                            returnType = _genner.GetParamValue(member.Type, "", 0);
                         }
 
                         //if (returnType == "GetList()")
                         //{
                         //    var tmp5 = 5;
                         //}
-
 
                         if (isAsync)
                         {
@@ -318,7 +323,7 @@ namespace GennyMcGenFace.Parsers
             {
                 var isAsync = member.Type.CodeType.FullName.Contains("System.Threading.Tasks.Task");
 
-                var baseType = _genner.TryToGuessGenericArgument(member.Type);
+                var strippedBaseType = _genner.TryToGuessGenericArgument(member.Type);
 
                 var paramsStr = _genner.GenerateFunctionParamValues(member, true);
 
@@ -327,7 +332,7 @@ namespace GennyMcGenFace.Parsers
                 var functionTargetName = "_testTarget";
 
                 var afterFunction = "Assert.IsNotNull(res);\r\n";
-                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (baseType != null && baseType.AsFullName == "System.Threading.Tasks.Task"))
+                if (member.Type != null && member.Type.TypeKind == vsCMTypeRef.vsCMTypeRefVoid || (strippedBaseType != null && strippedBaseType.AsFullName == "System.Threading.Tasks.Task"))
                 {
                     returnsValCode = "";
                     afterFunction = "";

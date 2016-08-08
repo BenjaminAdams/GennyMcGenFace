@@ -112,19 +112,19 @@ namespace GennyMcGenFace.Parsers
 
         public string GetParamValue(CodeTypeRef member, string paramName, int depth)
         {
-            member = RemoveNullable(member);
+            var strippedMember = StripGenerics(member);
 
             // if (member.CodeType == null) return "Error";
             if (member == null) return "Error";
 
             AddNameSpace(member);
 
-            if (member.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
+            if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefArray)
             {
                 //array
                 return GetArrayParamValue(member, depth);
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.DateTime")
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && strippedMember.AsString == "System.DateTime")
             {
                 //DateTime
                 var year = DateTime.Now.Year;
@@ -132,26 +132,27 @@ namespace GennyMcGenFace.Parsers
                 var day = DateTime.Now.Day;
                 return string.Format("new DateTime({0}, {1}, {2})", year, month, day);
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.CodeType != null && member.CodeType.Members != null && member.CodeType.Members.Count > 0 && member.CodeType.Kind == vsCMElement.vsCMElementEnum)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && strippedMember.CodeType != null && strippedMember.CodeType.Members != null && strippedMember.CodeType.Members.Count > 0 && strippedMember.CodeType.Kind == vsCMElement.vsCMElementEnum)
             {
                 //Enums
-                return member.CodeType.Members.Item(1).FullName;
+                return strippedMember.CodeType.Members.Item(1).FullName;
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && member.AsString == "System.Guid")
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && strippedMember.AsString == "System.Guid")
             {
                 //Guid
                 return string.Format("new Guid(\"{0}\")", Guid.NewGuid());
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && IsCodeTypeAList(member.CodeType.Name))
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && IsCodeTypeAList(strippedMember.CodeType.Name))
             {
                 return GetListParamValue(member, depth);
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 var paramsInConstructorStr = string.Empty;
-                if (member.CodeType.Members != null)
+                if (strippedMember.CodeType.Members != null)
                 {
-                    var constructor = member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
+                    //var constructor = member.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
+                    var constructor = strippedMember.CodeType.Members.OfType<CodeFunction>().FirstOrDefault(x => x.FunctionKind == vsCMFunction.vsCMFunctionConstructor);
                     if (constructor != null && constructor.Kind == vsCMElement.vsCMElementFunction)
                     {
                         paramsInConstructorStr = GenerateFunctionParamValues(constructor, false);
@@ -159,7 +160,9 @@ namespace GennyMcGenFace.Parsers
                 }
 
                 var includedNewLineInParams = string.Empty;
-                var initializerStr = IterateMembers(member.CodeType, depth);
+
+                //var initializerStr = IterateMembers(member.CodeType, depth);
+                var initializerStr = IterateMembers(strippedMember.CodeType, depth);
                 if (string.IsNullOrWhiteSpace(initializerStr) == false)
                 {
                     includedNewLineInParams = "\r\n";
@@ -167,56 +170,56 @@ namespace GennyMcGenFace.Parsers
                 }
 
                 //defined types/objects we have created
-                return string.Format("new {0}({2}) {{{3}{1}}}", member.AsString, initializerStr, paramsInConstructorStr, includedNewLineInParams);
+                return string.Format("new {0}({2}) {{{3}{1}}}", strippedMember.AsString, initializerStr, paramsInConstructorStr, includedNewLineInParams);
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefString)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefString)
             {
                 //string
                 return string.Format("\"{0}\"", Words.Gen(_opts.WordsInStrings));
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefChar)
             {
                 //char
                 var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
                 return "'" + chars[StaticRandom.Instance.Next(0, chars.Length)] + "'";
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefBool)
             {
                 //bool
                 return StaticRandom.Instance.Next(0, 1) == 1 ? "true" : "false";
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal ||
-                     member.TypeKind == vsCMTypeRef.vsCMTypeRefDouble ||
-                     member.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || member.TypeKind == vsCMTypeRef.vsCMTypeRefInt ||
-                     member.TypeKind == vsCMTypeRef.vsCMTypeRefLong || member.AsString == "uint" || member.AsString == "ulong")
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefDecimal ||
+                     strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefDouble ||
+                     strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefFloat || strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefInt ||
+                     strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefLong || strippedMember.AsString == "uint" || strippedMember.AsString == "ulong")
             {
                 //numbers (except short)
                 if (_opts.IntLength == 0) return "0";
                 return StaticRandom.Instance.Next(_opts.GetMaxIntLength()).ToString();
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefShort)
             {
                 //short
                 if (_opts.IntLength == 0) return "0";
                 var maxRnd = _opts.IntLength > 4 ? 9999 : _opts.GetMaxIntLength();
                 return StaticRandom.Instance.Next(maxRnd).ToString();
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefByte)
             {
                 //byte
                 return "new Byte()";
             }
-            else if (member.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
+            else if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefObject)
             {
                 //object
                 return "new Object()";
             }
-            else if (member.AsString == "sbyte")
+            else if (strippedMember.AsString == "sbyte")
             {
                 //sbyte
                 return StaticRandom.Instance.Next(-128, 127).ToString();
             }
-            else if (member.AsString == "ushort")  //no, YOU'RE SHORT!
+            else if (strippedMember.AsString == "ushort")  //no, YOU'RE SHORT!
             {
                 //ushort
                 return StaticRandom.Instance.Next(65535).ToString();
@@ -237,6 +240,7 @@ namespace GennyMcGenFace.Parsers
             {
                 try
                 {
+                    var strippedParam = StripGenerics(param.Type);
                     paramCount++;
                     if (member.Type != null && member.Type.CodeType != null && member.Type.CodeType.Namespace != null)
                     {
@@ -248,16 +252,15 @@ namespace GennyMcGenFace.Parsers
                         //Genny would create a huge class of a mock database that wouldnt even work!
                         paramsStr += string.Format("new {0}(), ", param.Type.CodeType.Name);
                     }
-                    else if (param.Type != null && param.Type.CodeType.Kind == vsCMElement.vsCMElementInterface)
+                    else if (strippedParam != null && strippedParam.CodeType.Kind == vsCMElement.vsCMElementInterface)
                     {
                         //generate interfaces
                         paramsStr += GenerateInterface(param) + ", ";
                     }
-                    else if (param.Type != null && param.Type.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (param.Type.AsString != "System.Guid" && param.Type.AsString != "System.DateTime" && param.Type.CodeType.Kind != vsCMElement.vsCMElementEnum))
+                    else if (strippedParam != null && strippedParam.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType && (strippedParam.AsString != "System.Guid" && strippedParam.AsString != "System.DateTime" && strippedParam.CodeType.Kind != vsCMElement.vsCMElementEnum))
                     {
                         //functions
                         //if the param is a CodeClass we can create an input object for it
-
                         var functionName = GenerateFunctionParamForClassInput(param.Type);
 
                         if (paramsDefinedB4Input)
@@ -297,16 +300,17 @@ namespace GennyMcGenFace.Parsers
 
         public string GenerateFunctionParamForClassInput(CodeTypeRef codeTypeRef)
         {
-            codeTypeRef = StripGenerics(codeTypeRef);
+            var strippedCodeTypeRef = StripGenerics(codeTypeRef);
 
-            var fullName = codeTypeRef.AsFullName.Replace("?", "");
-            var name = codeTypeRef.CodeType.Name.Replace("?", "");
+            var fullName = strippedCodeTypeRef.AsFullName.Replace("?", "");
+            var name = strippedCodeTypeRef.CodeType.Name.Replace("?", "");
 
             if (ClassGenerator.IsCodeTypeAList(name))
             {
                 var baseType = TryToGuessGenericArgument(codeTypeRef);
                 if (baseType == null) return null;
                 name = baseType.CodeType.Name + "List";
+                fullName = strippedCodeTypeRef.AsFullName.Replace("?", "");
             }
 
             var exists = _parts.ParamsGenerated.FirstOrDefault(x => x.FullName == fullName);
@@ -314,10 +318,10 @@ namespace GennyMcGenFace.Parsers
 
             var functionName = string.Format("Get{0}", name);
 
-            if (functionName == "GetList")
-            {
-                var asdasdsad = 55;
-            }
+            //if (functionName == "GetList")
+            //  {
+            //       var asdasdsad = 55;
+            //  }
 
             //_parts.ParamsGenerated keeps a list of functions that will get the value of the object we generated
             _parts.ParamsGenerated.Add(new ParamsGenerated() { FullName = fullName, GetFunctionName = functionName });
@@ -330,6 +334,11 @@ namespace GennyMcGenFace.Parsers
             else
             {
                 innerCode = GetParamValue(codeTypeRef, string.Empty, 3);
+            }
+
+            if (innerCode.Contains("Task"))
+            {
+                var asdasd = 444;
             }
 
             var gen = string.Format(@"
@@ -355,20 +364,20 @@ namespace GennyMcGenFace.Parsers
         //list logic
         private string GetListParamValue(CodeTypeRef member, int depth)
         {
-            var baseType = TryToGuessGenericArgument(member);
-            if (baseType == null) return string.Empty;
+            var strippedMember = TryToGuessGenericArgument(member);
+            if (strippedMember == null) return string.Empty;
 
-            if (baseType.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
+            if (strippedMember.TypeKind == vsCMTypeRef.vsCMTypeRefCodeType)
             {
                 //typed List
-                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}}\r\n", Spacing.Get(depth + 1), baseType.AsFullName, IterateMembers(baseType.CodeType, depth + 1));
-                return string.Format("new List<{1}>() {{\r\n{2}{0}}}", Spacing.Get(depth), baseType.AsFullName, objAsStr);
+                var objAsStr = string.Format("{0}new {1}() {{\r\n{2}{0}}}\r\n", Spacing.Get(depth + 1), strippedMember.AsFullName, IterateMembers(strippedMember.CodeType, depth + 1));
+                return string.Format("new List<{1}>() {{\r\n{2}{0}}}", Spacing.Get(depth), strippedMember.AsFullName, objAsStr);
             }
             else
             {
                 //generic list, such as string/int
                 // var ListString = new List<System.String>() { "yay" };
-                return string.Format("new List<{0}>() {{ {1} }}", baseType.AsFullName.RemoveSystemFromStr(), GetParamValue(baseType, "", depth + 1));
+                return string.Format("new List<{0}>() {{ {1} }}", strippedMember.AsFullName.RemoveSystemFromStr(), GetParamValue(strippedMember, "", depth + 1));
             }
         }
 

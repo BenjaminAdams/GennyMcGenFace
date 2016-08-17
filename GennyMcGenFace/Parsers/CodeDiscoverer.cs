@@ -4,6 +4,7 @@ using FastColoredTextBoxNS;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,7 +24,7 @@ namespace GennyMcGenFace.Parsers
         /// <param name="editor">The textbox to display progress</param>
         /// <param name="withProperties">True if you only want classes with properties only.  False if you want classes with Functions</param>
         /// <returns></returns>
-        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, FastColoredTextBox editor, bool withProperties)
+        public static List<CodeClass> ClassSearch(EnvDTE.Projects projects, FastColoredTextBox editor)
         {
             var projs = CodeDiscoverer.Projects();
             var foundClasses = new List<CodeClass>();
@@ -36,31 +37,31 @@ namespace GennyMcGenFace.Parsers
                 editor.AppendText("\r\n" + proj.Name);
 
                 if (proj.ProjectItems == null || proj.CodeModel == null) continue;
-
+                // var timer = new Stopwatch();
+                // timer.Start();
                 var projectItems = GetProjectItems(proj.ProjectItems).Where(v => v.Name.Contains(".cs"));
+
+                // foundClasses.AddRange(projectItems.Where(c => c.FileCodeModel != null).SelectMany(x => x.FileCodeModel.CodeElements.OfType<CodeNamespace>().SelectMany(xx => xx.Members.OfType<CodeClass>())));
 
                 Parallel.ForEach(projectItems, (c) =>
                 {
-                    var eles = c.FileCodeModel;
-                    if (eles == null) return;
+                    if (c == null || c.FileCodeModel == null) return;
 
-                    foreach (var ns in eles.CodeElements.OfType<CodeNamespace>())
+                    //foundClasses.AddRange(c.FileCodeModel.CodeElements.OfType<CodeNamespace>().SelectMany(x => x.Members.OfType<CodeClass>()));
+
+                    foreach (var ns in c.FileCodeModel.CodeElements.OfType<CodeNamespace>())
                     {
                         foreach (var member in ns.Members.OfType<CodeClass>())
                         {
                             if (member == null || member.Kind != vsCMElement.vsCMElementClass) continue;
-
-                            if (HasOneFunction(member))
-                            {
-                                foundClasses.Add(member);
-                            }
-                            else if (withProperties == true && HasOnePublicProperty(member))
-                            {
-                                foundClasses.Add(member);
-                            }
+                            foundClasses.Add(member);
                         }
                     }
                 });
+
+                //timer.Stop();
+
+                // editor.AppendText("\r\n" + proj.Name + "- " + timer.ElapsedMilliseconds + "ms");
             }
 
             if (foundClasses == null || foundClasses.Count == 0) throw new Exception("Could not find any classes");

@@ -74,7 +74,7 @@ namespace GennyMcGenFace.UI
 
         private void LoadClassBackground(object sender, EventArgs e)
         {
-            _classes = CodeDiscoverer.ClassSearch(_dte.Solution.Projects, _editor, false);
+            _classes = CodeDiscoverer.ClassSearch(_dte.Solution.Projects, _editor);
 
             _dataSource = BuildAutoCompleteSource();
         }

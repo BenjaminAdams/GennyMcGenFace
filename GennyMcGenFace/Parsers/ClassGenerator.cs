@@ -344,7 +344,7 @@ namespace GennyMcGenFace.Parsers
 
         public static bool IsCodeTypeAList(string name)
         {
-            return name == "List" || name == "ICollection" || name == "IList" || name == "IEnumerable";
+            return name == "List" || name == "ICollection" || name == "IList" || name == "IEnumerable" || name == "IReadOnlyCollection" || name == "SortedList";
         }
 
         //list logic

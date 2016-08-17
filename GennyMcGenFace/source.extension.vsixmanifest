@@ -1,14 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="668eccdc-c4ea-43d2-95fb-8c7a3a1d5bcc" Version="2.8" Language="en-US" Publisher="GennyMcGenFace" />
+    <Identity Id="668eccdc-c4ea-43d2-95fb-8c7a3a1d5bcc" Version="2.9" Language="en-US" Publisher="GennyMcGenFace" />
     <DisplayName>GennyMcGenFace</DisplayName>
     <Description xml:space="preserve">c# unit test generator</Description>
     <MoreInfo>https://github.com/BenjaminAdams/GennyMcGenFace</MoreInfo>
     <PreviewImage>Resources\gennExample.png</PreviewImage>
   </Metadata>
   <Installation InstalledByMsi="false">
-    <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[12.0]" />
+    <InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Premium" />
+    <InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Ultimate" />
+    <InstallationTarget Version="[12.0,13.0)" Id="Microsoft.VisualStudio.Pro" />
   </Installation>
   <Dependencies>
     <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />

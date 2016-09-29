@@ -149,7 +149,6 @@
     <Compile Include="Parsers\EnvDTETypeLocator.cs" />
     <Compile Include="Parsers\UnitTestGenerator.cs" />
     <Compile Include="UI\BaseUI.cs" />
-    <Compile Include="UI\ClassGenUI.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

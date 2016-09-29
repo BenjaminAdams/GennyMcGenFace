@@ -36,11 +36,12 @@ namespace GennyMcGenFace.Parsers
         {
             depth++;
             var str = "";
+
             foreach (CodeProperty member in selectedClass.Members.OfType<CodeProperty>())
             {
                 try
                 {
-                    if (CodeDiscoverer.IsValidPublicProperty((CodeElement)member) == false) continue;
+                   if (CodeDiscoverer.IsValidPublicProperty((CodeElement)member) == false) continue;
 
                     str += GetParam(member.Type, member.Name, depth);
                 }
@@ -49,6 +50,36 @@ namespace GennyMcGenFace.Parsers
                     //ignore silently
                 }
             }
+
+
+            foreach (CodeClass inheritedClass in selectedClass.Bases.OfType<CodeClass>())
+            {
+                try
+                {
+
+                    foreach (CodeProperty member in inheritedClass.Members.OfType<CodeProperty>())
+                    {
+                        try
+                        {
+                            var name = member.Name;
+
+                            if (CodeDiscoverer.IsValidPublicProperty((CodeElement)member) == false) continue;
+
+                            str += GetParam(member.Type, member.Name, depth);
+                        }
+                        catch (Exception ex)
+                        {
+                            //ignore silently
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //ignore silently
+                }
+            }
+         
+
 
             str = str.ReplaceLastOccurrence(",", "");
             return str;

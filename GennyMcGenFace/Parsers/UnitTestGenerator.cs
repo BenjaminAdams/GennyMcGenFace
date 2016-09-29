@@ -20,7 +20,7 @@ namespace GennyMcGenFace.Parsers
         private ClassGenerator _genner;
         private DTE2 _dte;
         private FastColoredTextBox _editor;
-        private bool _debugMode = false;
+        private bool _debugMode = true;
 
         public UnitTestGenerator(CodeClass selectedClass, DTE2 dte, FastColoredTextBox editor)
         {
